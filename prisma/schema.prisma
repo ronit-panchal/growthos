@@ -1,0 +1,139 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  name          String?
+  avatar        String?
+  role          String    @default("agency_owner") // agency_owner, team_member, admin
+  company       String?
+  plan          String    @default("free") // free, starter, pro, enterprise
+  trialEndsAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  leads         Lead[]
+  audits        AuditJob[]
+  outreach      OutreachCampaign[]
+  proposals     Proposal[]
+  activities    Activity[]
+}
+
+model Lead {
+  id            String    @id @default(cuid())
+  name          String
+  email         String
+  phone         String?
+  company       String?
+  title         String?
+  source        String    @default("manual") // manual, website, referral, linkedin, cold, event
+  status        String    @default("new") // new, contacted, qualified, proposal, negotiation, won, lost
+  score         Int       @default(0)
+  value         Float     @default(0)
+  tags          String?   // JSON string of tags array
+  notes         String?   // JSON string of notes array
+  website       String?
+  linkedin      String?
+  lastContactAt DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+  activities    Activity[]
+}
+
+model AuditJob {
+  id            String    @id @default(cuid())
+  url           String
+  status        String    @default("pending") // pending, running, completed, failed
+  progress      Int       @default(0)
+  overallScore  Int?
+  seoScore      Int?
+  uxScore       Int?
+  performance   Int?
+  accessibility Int?
+  findings      String?   // JSON string of findings array
+  suggestions   String?   // JSON string of suggestions array
+  error         String?
+  completedAt   DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+}
+
+model OutreachCampaign {
+  id            String    @id @default(cuid())
+  name          String
+  type          String    @default("cold_email") // cold_email, follow_up, linkedin, custom
+  tone          String    @default("professional") // professional, casual, friendly, assertive
+  industry      String?
+  targetAudience String?
+  subjectLine   String?
+  content       String?
+  cta           String?
+  sequence      String?   // JSON string of sequence steps
+  status        String    @default("draft") // draft, active, completed
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+}
+
+model Proposal {
+  id            String    @id @default(cuid())
+  title         String
+  clientName    String
+  clientEmail   String?
+  status        String    @default("draft") // draft, sent, viewed, accepted, rejected
+  sections      String?   // JSON string of proposal sections
+  pricing       String?   // JSON string of pricing items
+  totalValue    Float     @default(0)
+  shareToken    String?   @unique
+  notes         String?
+  sentAt        DateTime?
+  viewedAt      DateTime?
+  acceptedAt    DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+}
+
+model Activity {
+  id            String    @id @default(cuid())
+  type          String    // lead_created, audit_completed, outreach_sent, proposal_sent, etc.
+  title         String
+  description   String?
+  metadata      String?   // JSON string of additional data
+  createdAt     DateTime  @default(now())
+
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+  leadId        String?
+  lead          Lead?     @relation(fields: [leadId], references: [id])
+}
+
+model Subscription {
+  id            String    @id @default(cuid())
+  userId        String    @unique
+  plan          String    @default("free")
+  status        String    @default("active") // active, canceled, past_due, trialing
+  currentPeriodStart DateTime?
+  currentPeriodEnd   DateTime?
+  cancelAtPeriodEnd  Boolean   @default(false)
+  razorpaySubscriptionId String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
