@@ -26,7 +26,8 @@ import {
   Mail,
 } from 'lucide-react'
 import { toast } from 'sonner'
-import { cn } from '@/lib/utils'
+import { cn, formatCurrency } from '@/lib/utils'
+import { containerVariants, itemVariants } from '@/lib/animations'
 import { demoProposals } from '@/lib/demo-data'
 import {
   Card,
@@ -103,38 +104,10 @@ interface Proposal {
   createdAt: string
 }
 
-// ─── Animation Variants ──────────────────────────────────────────────────────
-
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.06 },
-  },
-}
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 16 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.4, ease: 'easeOut' },
-  },
-}
-
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function generateId() {
   return `id-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
-}
-
-function formatCurrency(value: number) {
-  return new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: 'USD',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(value)
 }
 
 function formatDate(dateStr: string | null) {
@@ -327,7 +300,7 @@ function ProposalPreviewCard({ proposal }: { proposal: Proposal }) {
   return (
     <div className="rounded-xl border border-border/60 bg-card overflow-hidden">
       {/* Header */}
-      <div className="relative bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-500 px-8 py-6">
+      <div className="relative bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-500 px-4 py-4 sm:px-8 sm:py-6">
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+')] opacity-50" />
         <div className="relative z-10">
           <div className="flex items-center justify-between">
@@ -349,7 +322,7 @@ function ProposalPreviewCard({ proposal }: { proposal: Proposal }) {
       </div>
 
       {/* Content */}
-      <div className="p-8 space-y-6">
+      <div className="p-4 sm:p-8 space-y-6">
         <div>
           <h2 className="text-xl font-bold text-foreground">{proposal.title}</h2>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -432,7 +405,11 @@ function ProposalPreviewCard({ proposal }: { proposal: Proposal }) {
 export default function ProposalsModule() {
   // ─── State ───────────────────────────────────────────────────────────────
   const [proposals, setProposals] = useState<Proposal[]>(
-    () => demoProposals as unknown as Proposal[]
+    () => demoProposals.map(p => ({
+      ...p,
+      sections: p.sections?.map((s: any, i: number) => ({ ...s, id: s.id || `s-${i}` })) || [],
+      pricing: p.pricing?.map((item: any, i: number) => ({ ...item, id: item.id || `p-${i}` })) || [],
+    })) as Proposal[]
   )
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<ProposalStatus | 'all'>('all')
@@ -596,23 +573,48 @@ export default function ProposalsModule() {
   }, [])
 
   const handleShare = useCallback((proposal: Proposal) => {
-    const token = proposal.shareToken || `share-${Math.random().toString(36).slice(2, 10)}`
-    const link = `${window.location.origin}/proposal/${token}`
-    navigator.clipboard.writeText(link).then(() => {
-      toast.success('Share link copied!', {
-        description: link,
-      })
+    const shareData = {
+      title: proposal.title,
+      client: proposal.clientName,
+      value: proposal.totalValue,
+      status: proposal.status,
+    }
+    navigator.clipboard.writeText(JSON.stringify(shareData, null, 2)).then(() => {
+      toast.success('Proposal Copied', { description: 'Proposal details copied to clipboard' })
     }).catch(() => {
-      toast.success('Share link generated!', {
-        description: link,
-      })
+      toast.success('Proposal Copied', { description: 'Proposal details copied to clipboard' })
     })
   }, [])
 
   const handleExportPdf = useCallback((proposal: Proposal) => {
-    toast.success('PDF export started!', {
-      description: `"${proposal.title}" is being exported as PDF.`,
+    let content = `PROPOSAL: ${proposal.title}\n`
+    content += `${'='.repeat(50)}\n\n`
+    content += `Client: ${proposal.clientName}\n`
+    content += `Email: ${proposal.clientEmail}\n`
+    content += `Status: ${proposal.status}\n`
+    content += `Date: ${new Date(proposal.createdAt).toLocaleDateString()}\n\n`
+
+    proposal.sections?.forEach((section: ProposalSection, i: number) => {
+      content += `${i + 1}. ${section.title}\n`
+      content += `${'-'.repeat(30)}\n`
+      content += `${section.content}\n\n`
     })
+
+    content += `PRICING\n`
+    content += `${'-'.repeat(30)}\n`
+    proposal.pricing?.forEach((item: PricingItem) => {
+      content += `${item.item} x${item.quantity} @ $${item.price.toLocaleString()} = $${(item.quantity * item.price).toLocaleString()}\n`
+    })
+    content += `\nTotal: $${proposal.totalValue?.toLocaleString()}\n`
+
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `proposal-${proposal.title.toLowerCase().replace(/\s+/g, '-')}.txt`
+    link.click()
+    URL.revokeObjectURL(url)
+    toast.success('Proposal Exported', { description: 'Proposal document has been downloaded' })
   }, [])
 
   const handleDelete = useCallback((proposalId: string) => {
@@ -1177,7 +1179,7 @@ export default function ProposalsModule() {
 
       {/* ─── Detail Sheet ──────────────────────────────────────────────────── */}
       <Sheet open={detailOpen} onOpenChange={setDetailOpen}>
-        <SheetContent side="right" className="w-full sm:max-w-3xl p-0 overflow-hidden flex flex-col">
+        <SheetContent side="right" className="w-full sm:max-w-3xl p-0 overflow-hidden flex flex-col max-h-[100vh]">
           {selectedProposal && (
             <>
               {/* Sheet Header */}

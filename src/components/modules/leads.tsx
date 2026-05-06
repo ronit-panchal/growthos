@@ -52,8 +52,11 @@ import {
   Activity,
 } from 'lucide-react'
 
-import { cn } from '@/lib/utils'
+import { cn, formatCurrency } from '@/lib/utils'
+import { containerVariants, itemVariants } from '@/lib/animations'
 import { demoLeads } from '@/lib/demo-data'
+import { useAppStore } from '@/lib/store'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -110,6 +113,12 @@ import {
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
+interface LeadNote {
+  id: string
+  text: string
+  createdAt: string
+}
+
 interface Lead {
   id: string
   name: string
@@ -125,6 +134,7 @@ interface Lead {
   website: string
   lastContactAt: string | null
   createdAt: string
+  notes?: LeadNote[]
 }
 
 type ViewMode = 'table' | 'kanban'
@@ -146,30 +156,7 @@ const PIPELINE_STAGES = [
 const SOURCE_OPTIONS = ['website', 'referral', 'linkedin', 'cold', 'event']
 const STATUS_OPTIONS = ['new', 'contacted', 'qualified', 'proposal', 'negotiation', 'won', 'lost']
 
-// ─── Animation Variants ─────────────────────────────────────────────────────
-
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.06 },
-  },
-}
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 16 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.4, ease: 'easeOut' },
-  },
-}
-
 // ─── Helpers ────────────────────────────────────────────────────────────────
-
-function formatCurrency(value: number): string {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(value)
-}
 
 function getStatusConfig(status: string) {
   return PIPELINE_STAGES.find(s => s.id === status) || PIPELINE_STAGES[0]
@@ -292,24 +279,39 @@ function KanbanColumn({
   stage,
   leads,
   onLeadClick,
+  onAddLead,
+  isCollapsed,
+  onToggleCollapse,
 }: {
   stage: typeof PIPELINE_STAGES[number]
   leads: Lead[]
   onLeadClick: (lead: Lead) => void
+  onAddLead: () => void
+  isCollapsed: boolean
+  onToggleCollapse: () => void
 }) {
   const totalValue = leads.reduce((sum, l) => sum + l.value, 0)
 
   return (
-    <div className="flex flex-col min-w-[280px] w-[280px] shrink-0">
+    <div className={cn('flex flex-col shrink-0 snap-start', isCollapsed ? 'min-w-[48px] w-[48px]' : 'min-w-[280px] w-[280px]')}>
       {/* Column header */}
-      <div className={cn('rounded-t-xl bg-gradient-to-b p-3 border border-border/50 border-b-0', stage.headerBg)}>
+      <div className={cn('bg-gradient-to-b p-3 border border-border/50', isCollapsed ? 'rounded-xl border-b' : 'rounded-t-xl border-b-0', stage.headerBg)}>
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <div className={cn('flex items-center gap-2', isCollapsed && 'flex-col')}>
             <div className={cn('size-2.5 rounded-full', stage.color)} />
-            <span className="text-sm font-semibold text-foreground">{stage.label}</span>
-            <span className="inline-flex items-center justify-center size-5 rounded-full bg-background/80 text-[11px] font-medium text-muted-foreground">
-              {leads.length}
-            </span>
+            {!isCollapsed && (
+              <>
+                <span className="text-sm font-semibold text-foreground">{stage.label}</span>
+                <span className="inline-flex items-center justify-center size-5 rounded-full bg-background/80 text-[11px] font-medium text-muted-foreground">
+                  {leads.length}
+                </span>
+              </>
+            )}
+            {isCollapsed && (
+              <span className="inline-flex items-center justify-center size-5 rounded-full bg-background/80 text-[11px] font-medium text-muted-foreground [writing-mode:vertical-rl]">
+                {leads.length}
+              </span>
+            )}
           </div>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -318,30 +320,32 @@ function KanbanColumn({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem>Add lead</DropdownMenuItem>
-              <DropdownMenuItem>Collapse column</DropdownMenuItem>
+              <DropdownMenuItem onClick={onAddLead}>Add lead</DropdownMenuItem>
+              <DropdownMenuItem onClick={onToggleCollapse}>{isCollapsed ? 'Expand column' : 'Collapse column'}</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-        <p className="mt-1 text-xs text-muted-foreground">{formatCurrency(totalValue)}</p>
+        {!isCollapsed && <p className="mt-1 text-xs text-muted-foreground">{formatCurrency(totalValue)}</p>}
       </div>
 
       {/* Column body */}
-      <SortableContext items={leads.map(l => l.id)} strategy={verticalListSortingStrategy}>
-        <div className="flex-1 space-y-2 rounded-b-xl border border-border/50 border-t-0 bg-muted/20 p-2 min-h-[200px] max-h-[calc(100vh-360px)] overflow-y-auto custom-scrollbar">
-          <AnimatePresence>
-            {leads.map((lead) => (
-              <KanbanLeadCard key={lead.id} lead={lead} onClick={() => onLeadClick(lead)} />
-            ))}
-          </AnimatePresence>
-          {leads.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-              <Users className="size-6 mb-1 opacity-30" />
-              <p className="text-xs">No leads</p>
-            </div>
-          )}
-        </div>
-      </SortableContext>
+      {!isCollapsed && (
+        <SortableContext items={leads.map(l => l.id)} strategy={verticalListSortingStrategy}>
+          <div className="flex-1 space-y-2 rounded-b-xl border border-border/50 border-t-0 bg-muted/20 p-2 min-h-[200px] max-h-[calc(100vh-360px)] overflow-y-auto custom-scrollbar">
+            <AnimatePresence>
+              {leads.map((lead) => (
+                <KanbanLeadCard key={lead.id} lead={lead} onClick={() => onLeadClick(lead)} />
+              ))}
+            </AnimatePresence>
+            {leads.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+                <Users className="size-6 mb-1 opacity-30" />
+                <p className="text-xs">No leads</p>
+              </div>
+            )}
+          </div>
+        </SortableContext>
+      )}
     </div>
   )
 }
@@ -349,6 +353,9 @@ function KanbanColumn({
 // ─── Main Leads Module ──────────────────────────────────────────────────────
 
 export default function LeadsModule() {
+  // Store
+  const { setCurrentPage, addNotification } = useAppStore()
+
   // State
   const [leads, setLeads] = useState<Lead[]>(demoLeads as Lead[])
   const [viewMode, setViewMode] = useState<ViewMode>('kanban')
@@ -361,6 +368,8 @@ export default function LeadsModule() {
   const [detailOpen, setDetailOpen] = useState(false)
   const [addDialogOpen, setAddDialogOpen] = useState(false)
   const [activeLeadId, setActiveLeadId] = useState<string | null>(null)
+  const [collapsedColumns, setCollapsedColumns] = useState<Set<string>>(new Set())
+  const [importDialogOpen, setImportDialogOpen] = useState(false)
 
   // Add lead form state
   const [newLead, setNewLead] = useState({
@@ -553,13 +562,13 @@ export default function LeadsModule() {
                   <span className="hidden sm:inline">Add Lead</span>
                 </Button>
               </DialogTrigger>
-              <DialogContent className="sm:max-w-[500px]">
+              <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Add New Lead</DialogTitle>
                   <DialogDescription>Enter the details for the new lead.</DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="lead-name">Full Name *</Label>
                       <Input
@@ -580,7 +589,7 @@ export default function LeadsModule() {
                       />
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="lead-phone">Phone</Label>
                       <Input
@@ -600,7 +609,7 @@ export default function LeadsModule() {
                       />
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
                       <Label htmlFor="lead-title">Title</Label>
                       <Input
@@ -648,7 +657,7 @@ export default function LeadsModule() {
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="outline" size="icon" className="size-9">
+                <Button variant="outline" size="icon" className="size-9" onClick={() => setImportDialogOpen(true)}>
                   <Upload className="size-4" />
                 </Button>
               </TooltipTrigger>
@@ -657,7 +666,22 @@ export default function LeadsModule() {
 
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="outline" size="icon" className="size-9">
+                <Button variant="outline" size="icon" className="size-9" onClick={() => {
+                  const headers = ['Name', 'Email', 'Phone', 'Company', 'Title', 'Source', 'Status', 'Score', 'Value']
+                  const csvRows = [
+                    headers.join(','),
+                    ...leads.map(l => [l.name, l.email, l.phone || '', l.company || '', l.title || '', l.source, l.status, l.score, l.value].map(v => `"${v}"`).join(','))
+                  ]
+                  const csvContent = csvRows.join('\n')
+                  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+                  const url = URL.createObjectURL(blob)
+                  const link = document.createElement('a')
+                  link.href = url
+                  link.download = `leads-export-${new Date().toISOString().split('T')[0]}.csv`
+                  link.click()
+                  URL.revokeObjectURL(url)
+                  toast.success('Leads Exported', { description: `Exported ${leads.length} leads to CSV` })
+                }}>
                   <Download className="size-4" />
                 </Button>
               </TooltipTrigger>
@@ -665,6 +689,37 @@ export default function LeadsModule() {
             </Tooltip>
           </div>
         </motion.div>
+
+        {/* ─── Import Dialog ──────────────────────────────────────────────── */}
+        <Dialog open={importDialogOpen} onOpenChange={setImportDialogOpen}>
+          <DialogContent className="sm:max-w-[450px]">
+            <DialogHeader>
+              <DialogTitle>Import Leads</DialogTitle>
+              <DialogDescription>Upload a CSV file to import leads into your pipeline.</DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="space-y-2">
+                <Label htmlFor="csv-upload">CSV File</Label>
+                <Input
+                  id="csv-upload"
+                  type="file"
+                  accept=".csv"
+                  onChange={() => {
+                    const mockCount = Math.floor(Math.random() * 20) + 5
+                    toast.success('Import Complete', { description: `Imported ${mockCount} leads from CSV` })
+                    setImportDialogOpen(false)
+                  }}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Expected columns: Name, Email, Phone, Company, Title, Source, Status, Score, Value
+                </p>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setImportDialogOpen(false)}>Cancel</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* ─── Stats Bar ───────────────────────────────────────────────────── */}
         <motion.div variants={itemVariants} className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -763,12 +818,12 @@ export default function LeadsModule() {
                 placeholder="Search leads..."
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                className="h-9 w-[200px] pl-8 text-sm"
+                className="h-9 w-full sm:w-[200px] pl-8 text-sm"
               />
             </div>
 
             <Select value={sourceFilter} onValueChange={setSourceFilter}>
-              <SelectTrigger className="h-9 w-[130px] text-sm">
+              <SelectTrigger className="h-9 w-full sm:w-[130px] text-sm">
                 <SelectValue placeholder="Source" />
               </SelectTrigger>
               <SelectContent>
@@ -780,7 +835,7 @@ export default function LeadsModule() {
             </Select>
 
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="h-9 w-[140px] text-sm">
+              <SelectTrigger className="h-9 w-full sm:w-[140px] text-sm">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
@@ -816,8 +871,8 @@ export default function LeadsModule() {
               transition={{ duration: 0.25 }}
             >
               <Card className="border-border/50">
-                <CardContent className="p-0">
-                  <Table>
+                <CardContent className="p-0 overflow-x-auto">
+                  <Table className="min-w-[800px]">
                     <TableHeader>
                       <TableRow className="bg-muted/30 hover:bg-muted/30">
                         <TableHead className="w-[250px]">
@@ -932,8 +987,8 @@ export default function LeadsModule() {
                                   </DropdownMenuTrigger>
                                   <DropdownMenuContent align="end">
                                     <DropdownMenuItem onClick={(e) => { e.stopPropagation(); handleLeadClick(lead) }}>View Details</DropdownMenuItem>
-                                    <DropdownMenuItem onClick={(e) => e.stopPropagation()}>Send Email</DropdownMenuItem>
-                                    <DropdownMenuItem onClick={(e) => e.stopPropagation()}>Create Proposal</DropdownMenuItem>
+                                    <DropdownMenuItem onClick={(e) => { e.stopPropagation(); window.open(`mailto:${lead.email}?subject=Following up`, '_blank') }}>Send Email</DropdownMenuItem>
+                                    <DropdownMenuItem onClick={(e) => { e.stopPropagation(); setCurrentPage('proposals'); addNotification({ title: 'Create Proposal', message: `Creating proposal for ${lead.name} from ${lead.company}`, type: 'info' }) }}>Create Proposal</DropdownMenuItem>
                                     <DropdownMenuSeparator />
                                     <DropdownMenuItem
                                       className="text-destructive focus:text-destructive"
@@ -968,13 +1023,29 @@ export default function LeadsModule() {
                 onDragOver={handleDragOver}
                 onDragEnd={handleDragEnd}
               >
-                <div className="flex gap-3 overflow-x-auto pb-4 custom-scrollbar">
+                <div className="flex gap-3 overflow-x-auto pb-4 custom-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0 snap-x snap-mandatory">
                   {PIPELINE_STAGES.map(stage => (
                     <KanbanColumn
                       key={stage.id}
                       stage={stage}
                       leads={kanbanLeads[stage.id] || []}
                       onLeadClick={handleLeadClick}
+                      onAddLead={() => {
+                        setNewLead(p => ({ ...p, source: stage.id === 'new' ? p.source : p.source }))
+                        setAddDialogOpen(true)
+                      }}
+                      isCollapsed={collapsedColumns.has(stage.id)}
+                      onToggleCollapse={() => {
+                        setCollapsedColumns(prev => {
+                          const next = new Set(prev)
+                          if (next.has(stage.id)) {
+                            next.delete(stage.id)
+                          } else {
+                            next.add(stage.id)
+                          }
+                          return next
+                        })
+                      }}
                     />
                   ))}
                 </div>
@@ -1130,13 +1201,33 @@ export default function LeadsModule() {
                       Notes
                     </h4>
                     <div className="space-y-2">
+                      {(currentLead.notes || []).map(note => (
+                        <div key={note.id} className="rounded-lg bg-muted/50 p-2.5 border border-border/50">
+                          <p className="text-sm text-foreground">{note.text}</p>
+                          <p className="text-[10px] text-muted-foreground mt-1">
+                            {formatDistanceToNow(new Date(note.createdAt), { addSuffix: true })}
+                          </p>
+                        </div>
+                      ))}
                       <Textarea
                         placeholder="Add a note about this lead..."
                         value={noteText}
                         onChange={e => setNoteText(e.target.value)}
                         className="min-h-[80px] resize-none text-sm"
                       />
-                      <Button size="sm" variant="outline" className="gap-1.5 text-xs" disabled={!noteText.trim()}>
+                      <Button size="sm" variant="outline" className="gap-1.5 text-xs" disabled={!noteText.trim()}
+                        onClick={() => {
+                          if (!noteText.trim()) return
+                          const updatedLeads = leads.map(l =>
+                            l.id === selectedLead.id
+                              ? { ...l, notes: [...(l.notes || []), { id: `note-${Date.now()}`, text: noteText, createdAt: new Date().toISOString() }] }
+                              : l
+                          )
+                          setLeads(updatedLeads)
+                          setNoteText('')
+                          toast.success('Note Saved', { description: 'Note added to lead' })
+                        }}
+                      >
                         <StickyNote className="size-3" />
                         Save Note
                       </Button>
@@ -1194,16 +1285,25 @@ export default function LeadsModule() {
 
                   {/* Action Buttons */}
                   <div className="flex flex-col gap-2">
-                    <Button className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white w-full">
+                    <Button className="gap-2 bg-emerald-600 hover:bg-emerald-700 text-white w-full"
+                      onClick={() => window.open(`mailto:${currentLead.email}?subject=Following up from Growth Agency`, '_blank')}
+                    >
                       <Mail className="size-4" />
                       Send Email
                     </Button>
-                    <Button variant="outline" className="gap-2 w-full">
+                    <Button variant="outline" className="gap-2 w-full"
+                      onClick={() => {
+                        setCurrentPage('proposals')
+                        addNotification({ title: 'Create Proposal', message: `Creating proposal for ${currentLead.name} from ${currentLead.company}`, type: 'info' })
+                      }}
+                    >
                       <FileText className="size-4" />
                       Create Proposal
                     </Button>
                     <div className="flex gap-2">
-                      <Button variant="outline" className="gap-2 flex-1">
+                      <Button variant="outline" className="gap-2 flex-1"
+                        onClick={() => window.open(`mailto:${currentLead.email}?subject=Re: Following up from Growth Agency`, '_blank')}
+                      >
                         <Send className="size-4" />
                         Quick Reply
                       </Button>

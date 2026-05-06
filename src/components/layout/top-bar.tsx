@@ -62,7 +62,7 @@ function formatTimeAgo(dateStr: string): string {
 
 export function TopBar() {
   const { theme, setTheme } = useTheme()
-  const { user, notifications, setCurrentPage, markNotificationRead, markAllNotificationsRead } = useAppStore()
+  const { user, notifications, setCurrentPage, markNotificationRead, markAllNotificationsRead, setUser, addNotification } = useAppStore()
   const [searchOpen, setSearchOpen] = useState(false)
   const mounted = useSyncExternalStore(
     () => () => {},
@@ -100,7 +100,7 @@ export function TopBar() {
       </div>
 
       {/* Search */}
-      <div className="relative flex-1 max-w-md">
+      <div className="relative flex-1 max-w-sm md:max-w-md">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
         <Input
           placeholder="Search anything..."
@@ -172,7 +172,7 @@ export function TopBar() {
               )}
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-80 p-0">
+          <DropdownMenuContent align="end" className="w-[calc(100vw-2rem)] sm:w-80 p-0">
             <div className="flex items-center justify-between px-4 py-3">
               <DropdownMenuLabel className="p-0 text-sm font-semibold">
                 Notifications
@@ -289,7 +289,10 @@ export function TopBar() {
               </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="cursor-pointer text-destructive focus:text-destructive">
+            <DropdownMenuItem className="cursor-pointer text-destructive focus:text-destructive" onClick={() => {
+              setUser(null)
+              addNotification({ title: 'Signed Out', message: 'You have been signed out successfully', type: 'info' })
+            }}>
               <LogOut className="mr-2 size-4" />
               Sign Out
             </DropdownMenuItem>

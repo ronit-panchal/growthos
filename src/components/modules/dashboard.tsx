@@ -37,6 +37,8 @@ import {
 } from 'recharts'
 
 import { cn } from '@/lib/utils'
+import { containerVariants, itemVariants } from '@/lib/animations'
+import { useAppStore } from '@/lib/store'
 import {
   demoRevenueData,
   demoLeadSourceData,
@@ -55,25 +57,6 @@ import { Progress } from '@/components/ui/progress'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
-
-// ─── Animation Variants ───────────────────────────────────────────────────────
-
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.08 },
-  },
-}
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.5, ease: 'easeOut' },
-  },
-}
 
 // ─── Sparkline Data ───────────────────────────────────────────────────────────
 
@@ -131,7 +114,7 @@ function KPICard({ icon, label, value, change, changeType, subtext, sparkData, s
               </div>
               <span className="text-sm font-medium text-muted-foreground">{label}</span>
             </div>
-            <div className="text-3xl font-bold tracking-tight">{value}</div>
+            <div className="text-2xl md:text-3xl font-bold tracking-tight">{value}</div>
             <div className="flex items-center gap-1.5">
               {changeType === 'up' ? (
                 <ArrowUpRight className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
@@ -151,7 +134,7 @@ function KPICard({ icon, label, value, change, changeType, subtext, sparkData, s
               <span className="text-xs text-muted-foreground">{subtext}</span>
             </div>
           </div>
-          <div className="h-12 w-20">
+          <div className="h-12 w-16 sm:w-20">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={sparkData}>
                 <defs>
@@ -260,6 +243,9 @@ function PipelineTooltip({ active, payload }: { active?: boolean; payload?: Arra
 // ─── Main Dashboard Component ─────────────────────────────────────────────────
 
 export default function Dashboard() {
+  const { user } = useAppStore()
+  const firstName = user?.name?.split(' ')[0] || 'there'
+
   const today = useMemo(() => {
     return new Date().toLocaleDateString('en-US', {
       weekday: 'long',
@@ -299,7 +285,7 @@ export default function Dashboard() {
             <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+')] opacity-50" />
             <div className="relative z-10">
               <h1 className="text-2xl font-bold text-white md:text-3xl">
-                Welcome back, Alex! 👋
+                Welcome back, {firstName}! 👋
               </h1>
               <p className="mt-1 text-sm text-emerald-100 md:text-base">{today}</p>
               <p className="mt-2 text-sm text-emerald-50/80 md:text-base">
@@ -372,7 +358,7 @@ export default function Dashboard() {
             <CardDescription>Monthly revenue over the past year</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-[280px] w-full">
+            <div className="h-[220px] sm:h-[280px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={demoRevenueData} margin={{ top: 5, right: 10, left: 0, bottom: 0 }}>
                   <defs>
@@ -437,7 +423,7 @@ export default function Dashboard() {
             <CardDescription>Distribution of leads by channel</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-[280px] w-full flex items-center justify-center">
+            <div className="h-[220px] sm:h-[280px] w-full flex items-center justify-center">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
@@ -486,7 +472,7 @@ export default function Dashboard() {
             <CardDescription>Deal flow across pipeline stages</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="h-[300px] w-full">
+            <div className="h-[240px] sm:h-[300px] w-full">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart
                   data={demoPipelineData}
@@ -566,7 +552,7 @@ export default function Dashboard() {
             <CardDescription>Latest actions and updates</CardDescription>
           </CardHeader>
           <CardContent>
-            <ScrollArea className="h-[380px] pr-3">
+            <ScrollArea className="h-[300px] sm:h-[380px] pr-3">
               <div className="space-y-4">
                 {activitiesWithRelativeTime.map((activity, index) => (
                   <div

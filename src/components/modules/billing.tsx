@@ -17,6 +17,7 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
+import { containerVariants, itemVariants } from '@/lib/animations'
 import { demoPlans } from '@/lib/demo-data'
 import { useAppStore } from '@/lib/store'
 import {
@@ -49,25 +50,6 @@ import {
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Separator } from '@/components/ui/separator'
-
-// ─── Animation Variants ───────────────────────────────────────────────────────
-
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.08 },
-  },
-}
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.5, ease: 'easeOut' },
-  },
-}
 
 // ─── Mock Invoice Data ────────────────────────────────────────────────────────
 
@@ -236,17 +218,17 @@ export default function Billing() {
                 </div>
                 <div>
                   <CardTitle className="text-lg flex items-center gap-2">
-                    Pro Plan
+                    {user?.plan === 'pro' ? 'Pro' : user?.plan === 'starter' ? 'Starter' : user?.plan === 'enterprise' ? 'Enterprise' : 'Free'} Plan
                     <Badge className="bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-0 text-[10px] font-bold uppercase">
                       Active
                     </Badge>
                   </CardTitle>
                   <CardDescription>
-                    Renews on Jan 1, 2025 &middot; $129/month
+                    Renews {new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} &middot; ${currentPlanId === 'enterprise' ? '349' : currentPlanId === 'pro' ? '129' : currentPlanId === 'starter' ? '49' : '0'}/month
                   </CardDescription>
                 </div>
               </div>
-              <Button variant="outline" size="sm" className="hidden sm:flex">
+              <Button variant="outline" size="sm" className="hidden sm:flex" onClick={() => toast.info('Subscription Management', { description: 'Connect Razorpay to manage subscriptions' })}>
                 <CreditCard className="mr-2 h-4 w-4" />
                 Manage Subscription
               </Button>
@@ -270,7 +252,7 @@ export default function Billing() {
             </div>
           </CardContent>
           <CardFooter className="sm:hidden">
-            <Button variant="outline" size="sm" className="w-full">
+            <Button variant="outline" size="sm" className="w-full" onClick={() => toast.info('Subscription Management', { description: 'Connect Razorpay to manage subscriptions' })}>
               <CreditCard className="mr-2 h-4 w-4" />
               Manage Subscription
             </Button>
@@ -469,7 +451,7 @@ export default function Billing() {
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
-              <Table>
+              <Table className="min-w-[600px]">
                 <TableHeader>
                   <TableRow>
                     <TableHead>Date</TableHead>
@@ -512,7 +494,7 @@ export default function Billing() {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => toast.success('Invoice Downloaded', { description: `Invoice ${invoice.id} downloaded` })}>
                           <Download className="h-4 w-4" />
                         </Button>
                       </TableCell>

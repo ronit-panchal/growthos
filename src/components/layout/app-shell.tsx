@@ -44,16 +44,18 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { TopBar } from '@/components/layout/top-bar'
 import dynamic from 'next/dynamic'
+import { ErrorBoundary } from '@/components/error-boundary'
+import { DashboardSkeleton, CardGridSkeleton, TableSkeleton } from '@/components/module-skeleton'
 
 // Lazy load module components
-const Dashboard = dynamic(() => import('@/components/modules/dashboard'), { ssr: false })
-const LeadsModule = dynamic(() => import('@/components/modules/leads'), { ssr: false })
-const AuditModule = dynamic(() => import('@/components/modules/audit'), { ssr: false })
-const OutreachModule = dynamic(() => import('@/components/modules/outreach'), { ssr: false })
-const ProposalsModule = dynamic(() => import('@/components/modules/proposals'), { ssr: false })
-const BillingModule = dynamic(() => import('@/components/modules/billing'), { ssr: false })
-const AdminModule = dynamic(() => import('@/components/modules/admin'), { ssr: false })
-const SettingsModule = dynamic(() => import('@/components/modules/settings'), { ssr: false })
+const Dashboard = dynamic(() => import('@/components/modules/dashboard'), { ssr: false, loading: () => <DashboardSkeleton /> })
+const LeadsModule = dynamic(() => import('@/components/modules/leads'), { ssr: false, loading: () => <DashboardSkeleton /> })
+const AuditModule = dynamic(() => import('@/components/modules/audit'), { ssr: false, loading: () => <DashboardSkeleton /> })
+const OutreachModule = dynamic(() => import('@/components/modules/outreach'), { ssr: false, loading: () => <CardGridSkeleton /> })
+const ProposalsModule = dynamic(() => import('@/components/modules/proposals'), { ssr: false, loading: () => <DashboardSkeleton /> })
+const BillingModule = dynamic(() => import('@/components/modules/billing'), { ssr: false, loading: () => <CardGridSkeleton count={4} /> })
+const AdminModule = dynamic(() => import('@/components/modules/admin'), { ssr: false, loading: () => <DashboardSkeleton /> })
+const SettingsModule = dynamic(() => import('@/components/modules/settings'), { ssr: false, loading: () => <TableSkeleton /> })
 
 interface NavItem {
   title: string
@@ -94,7 +96,7 @@ const pageVariants = {
 }
 
 function SidebarNav() {
-  const { currentPage, setCurrentPage, user } = useAppStore()
+  const { currentPage, setCurrentPage, user, setUser, addNotification } = useAppStore()
 
   const filteredNavItems = navItems.filter(
     (item) =>
@@ -261,7 +263,10 @@ function SidebarNav() {
                   Manage Subscription
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="cursor-pointer text-destructive focus:text-destructive">
+                <DropdownMenuItem className="cursor-pointer text-destructive focus:text-destructive" onClick={() => {
+                  setUser(null)
+                  addNotification({ title: 'Signed Out', message: 'You have been signed out successfully', type: 'info' })
+                }}>
                   Sign Out
                 </DropdownMenuItem>
               </DropdownMenuContent>
@@ -307,7 +312,9 @@ export function AppShell({ children }: { children?: ReactNode }) {
               transition={{ duration: 0.2, ease: 'easeOut' }}
               className="h-full"
             >
-              {children || moduleMap[currentPage]}
+              <ErrorBoundary>
+                {children || moduleMap[currentPage]}
+              </ErrorBoundary>
             </motion.div>
           </AnimatePresence>
         </main>

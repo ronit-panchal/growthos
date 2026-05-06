@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
 
     // Determine sort order
     const sortField = sort.startsWith('-') ? sort.slice(1) : sort;
-    const sortOrder = sort.startsWith('-') ? 'desc' : 'desc'; // default desc for most fields
+    const sortOrder = sort.startsWith('-') ? 'desc' : 'asc'; // '-' prefix means descending
     const orderBy: Record<string, string> = {};
     orderBy[sortField] = sortOrder;
 

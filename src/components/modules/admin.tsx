@@ -43,6 +43,7 @@ import {
 } from 'recharts'
 
 import { cn } from '@/lib/utils'
+import { containerVariants, itemVariants } from '@/lib/animations'
 import { demoAdminStats, demoRecentUsers, demoRevenueData } from '@/lib/demo-data'
 import {
   Card,
@@ -94,25 +95,6 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { toast } from 'sonner'
-
-// ─── Animation Variants ───────────────────────────────────────────────────────
-
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.08 },
-  },
-}
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.5, ease: 'easeOut' },
-  },
-}
 
 // ─── Emerald Color Palette ────────────────────────────────────────────────────
 
@@ -459,8 +441,8 @@ export default function AdminModule() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="rounded-lg border border-border/50 overflow-hidden">
-              <Table>
+            <div className="rounded-lg border border-border/50 overflow-hidden overflow-x-auto">
+              <Table className="min-w-[600px]">
                 <TableHeader>
                   <TableRow className="bg-muted/30">
                     <TableHead>User</TableHead>
@@ -625,7 +607,7 @@ export default function AdminModule() {
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-teal-500/10 mx-auto mb-2">
                   <Megaphone className="h-4 w-4 text-teal-600 dark:text-teal-400" />
                 </div>
-                <p className="text-lg font-bold text-foreground">520</p>
+                <p className="text-lg font-bold text-foreground">{Math.round(demoAdminStats.auditsThisMonth * 1.52)}</p>
                 <p className="text-[10px] text-muted-foreground mt-0.5">Outreach</p>
               </div>
               <div className="rounded-lg border border-border/50 bg-muted/30 p-3 text-center">

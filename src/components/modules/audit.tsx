@@ -22,6 +22,7 @@ import {
   Clock,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { containerVariants, itemVariants } from '@/lib/animations'
 import { demoAudits } from '@/lib/demo-data'
 import {
   Card,
@@ -85,25 +86,6 @@ interface Audit {
   suggestions: string[]
   completedAt: string | null
   createdAt: string
-}
-
-// ─── Animation Variants ───────────────────────────────────────────────────────
-
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.06 },
-  },
-}
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 16 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.4, ease: 'easeOut' },
-  },
 }
 
 // ─── Audit Steps for Progress ─────────────────────────────────────────────────
@@ -487,10 +469,47 @@ export default function AuditModule() {
 
   // Export report
   const handleExportReport = useCallback(() => {
-    toast.success('Report Exported', {
-      description: 'Your audit report has been downloaded successfully.',
-    })
-  }, [])
+    if (!selectedAudit) return
+
+    const audit = selectedAudit
+    let content = `WEBSITE AUDIT REPORT\n`
+    content += `${'='.repeat(50)}\n\n`
+    content += `URL: ${audit.url}\n`
+    content += `Status: ${audit.status}\n`
+    content += `Date: ${new Date(audit.createdAt).toLocaleDateString()}\n\n`
+
+    if (audit.overallScore !== null) {
+      content += `SCORES\n`
+      content += `${'-'.repeat(30)}\n`
+      content += `Overall: ${audit.overallScore}/100\n`
+      content += `SEO: ${audit.seoScore}/100\n`
+      content += `UX: ${audit.uxScore}/100\n`
+      content += `Performance: ${audit.performance}/100\n`
+      content += `Accessibility: ${audit.accessibility}/100\n\n`
+
+      content += `FINDINGS\n`
+      content += `${'-'.repeat(30)}\n`
+      audit.findings?.forEach((f: Finding, i: number) => {
+        content += `${i + 1}. [${f.severity.toUpperCase()}] ${f.title} (${f.category})\n`
+        content += `   ${f.description}\n\n`
+      })
+
+      content += `RECOMMENDATIONS\n`
+      content += `${'-'.repeat(30)}\n`
+      audit.suggestions?.forEach((s: string, i: number) => {
+        content += `${i + 1}. ${s}\n`
+      })
+    }
+
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `audit-report-${audit.url.replace(/[^a-z0-9]/gi, '-')}.txt`
+    link.click()
+    URL.revokeObjectURL(url)
+    toast.success('Report Exported', { description: 'Audit report has been downloaded' })
+  }, [selectedAudit])
 
   // The running audit (could be a new one or from demo data)
   const activeRunningAudit = useMemo(() => {
@@ -711,7 +730,8 @@ export default function AuditModule() {
               </div>
             ) : (
               <ScrollArea className="max-h-96">
-                <Table>
+                <div className="overflow-x-auto">
+                <Table className="min-w-[600px]">
                   <TableHeader>
                     <TableRow>
                       <TableHead>URL</TableHead>
@@ -767,6 +787,7 @@ export default function AuditModule() {
                     ))}
                   </TableBody>
                 </Table>
+                </div>
               </ScrollArea>
             )}
           </CardContent>
@@ -837,7 +858,7 @@ export default function AuditModule() {
 
       {/* ─── Audit Detail Sheet ──────────────────────────────────────────── */}
       <Sheet open={showDetailSheet} onOpenChange={setShowDetailSheet}>
-        <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto p-0">
+        <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto p-0 max-h-[100vh]">
           {selectedAudit && (
             <div className="flex flex-col h-full">
               {/* Sheet Header */}
@@ -868,7 +889,7 @@ export default function AuditModule() {
                         <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-4">
                           Performance Scores
                         </h3>
-                        <div className="flex flex-wrap items-center justify-center gap-6 py-4">
+                        <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6 py-4">
                           <CircularScore
                             score={selectedAudit.overallScore}
                             size={100}

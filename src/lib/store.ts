@@ -35,6 +35,7 @@ interface AppState {
   setCurrentPage: (page: AppPage) => void
   setSidebarOpen: (open: boolean) => void
   setSidebarCollapsed: (collapsed: boolean) => void
+  setIsDemoMode: (isDemoMode: boolean) => void
   setUser: (user: AppState['user']) => void
   addNotification: (notification: Omit<AppState['notifications'][0], 'id' | 'read' | 'createdAt'>) => void
   markNotificationRead: (id: string) => void
@@ -42,7 +43,7 @@ interface AppState {
 }
 
 export const useAppStore = create<AppState>((set) => ({
-  currentPage: 'proposals',
+  currentPage: 'dashboard',
   sidebarOpen: true,
   sidebarCollapsed: false,
   isDemoMode: true,
@@ -92,6 +93,7 @@ export const useAppStore = create<AppState>((set) => ({
   setCurrentPage: (page) => set({ currentPage: page }),
   setSidebarOpen: (open) => set({ sidebarOpen: open }),
   setSidebarCollapsed: (collapsed) => set({ sidebarCollapsed: collapsed }),
+  setIsDemoMode: (isDemoMode) => set({ isDemoMode }),
   setUser: (user) => set({ user }),
   addNotification: (notification) =>
     set((state) => ({

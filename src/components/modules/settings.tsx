@@ -27,6 +27,7 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
+import { containerVariants, itemVariants } from '@/lib/animations'
 import { useAppStore } from '@/lib/store'
 import { demoTeamMembers } from '@/lib/demo-data'
 import {
@@ -69,25 +70,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-
-// ─── Animation Variants ───────────────────────────────────────────────────────
-
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.08 },
-  },
-}
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.5, ease: 'easeOut' },
-  },
-}
 
 // ─── Integration Data ─────────────────────────────────────────────────────────
 
@@ -152,8 +134,9 @@ export default function Settings() {
 
   // Profile save
   const handleSaveProfile = () => {
+    if (!user) return
     setUser({
-      ...user!,
+      ...user,
       name: profileName,
       email: profileEmail,
       company: profileCompany,
@@ -582,7 +565,7 @@ export default function Settings() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center justify-between rounded-lg border border-red-500/20 bg-red-500/5 p-4">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between rounded-lg border border-red-500/20 bg-red-500/5 p-4 gap-4">
               <div>
                 <p className="text-sm font-medium text-red-600 dark:text-red-400">
                   Delete Account
