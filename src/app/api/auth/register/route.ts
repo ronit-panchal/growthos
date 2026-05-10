@@ -36,13 +36,23 @@ export async function POST(request: NextRequest) {
     }),
   })
 
-  const payload = (await response.json()) as { msg?: string; error_description?: string }
+  const raw = await response.text()
+  let payload: Record<string, unknown> = {}
+  try {
+    payload = raw ? (JSON.parse(raw) as Record<string, unknown>) : {}
+  } catch {
+    payload = {}
+  }
 
   if (!response.ok) {
-    return NextResponse.json(
-      { error: payload.msg ?? payload.error_description ?? 'Failed to create account.' },
-      { status: response.status }
-    )
+    const message =
+      (typeof payload.msg === 'string' && payload.msg) ||
+      (typeof payload.message === 'string' && payload.message) ||
+      (typeof payload.error === 'string' && payload.error) ||
+      (typeof payload.error_description === 'string' && payload.error_description) ||
+      raw ||
+      'Failed to create account.'
+    return NextResponse.json({ error: String(message).trim() || 'Failed to create account.' }, { status: response.status })
   }
 
   return NextResponse.json({ ok: true })

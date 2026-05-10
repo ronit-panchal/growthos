@@ -3,6 +3,7 @@
 import { FormEvent, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 
 export default function RegisterPage() {
   const [name, setName] = useState('')
@@ -17,21 +18,39 @@ export default function RegisterPage() {
     setLoading(true)
     setError('')
 
-    const response = await fetch('/api/auth/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, email, password }),
-    })
+    try {
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, email, password }),
+      })
 
-    const payload = (await response.json()) as { error?: string }
-    setLoading(false)
+      const text = await response.text()
+      let payload: { error?: string; ok?: boolean } = {}
+      try {
+        payload = text ? (JSON.parse(text) as typeof payload) : {}
+      } catch {
+        toast.error(text || 'Something went wrong. Please try again.')
+        setError(text || 'Invalid response from server.')
+        return
+      }
 
-    if (!response.ok) {
-      setError(payload.error ?? 'Failed to create account.')
-      return
+      if (!response.ok) {
+        const message = payload.error ?? `Could not sign up (${response.status}).`
+        setError(message)
+        toast.error(message)
+        return
+      }
+
+      toast.success('Account created. Sign in with your email and password.')
+      router.push('/login')
+    } catch (e) {
+      const message = e instanceof Error ? e.message : 'Network error. Check your connection.'
+      setError(message)
+      toast.error(message)
+    } finally {
+      setLoading(false)
     }
-
-    router.push('/login')
   }
 
   return (

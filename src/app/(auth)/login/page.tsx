@@ -4,6 +4,7 @@ import { FormEvent, useState } from 'react'
 import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { toast } from 'sonner'
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
@@ -18,21 +19,30 @@ export default function LoginPage() {
     setLoading(true)
     setError('')
 
-    const result = await signIn('credentials', {
-      email,
-      password,
-      redirect: false,
-      callbackUrl,
-    })
+    try {
+      const result = await signIn('credentials', {
+        email,
+        password,
+        redirect: false,
+        callbackUrl,
+      })
 
-    setLoading(false)
+      if (!result || result.error) {
+        const message = result?.error ?? 'Invalid credentials or email sign-in disabled in Supabase.'
+        setError(message)
+        toast.error(message)
+        return
+      }
 
-    if (!result || result.error) {
-      setError('Invalid credentials. Please try again.')
-      return
+      toast.success('Signed in successfully.')
+      router.push(result.url ?? callbackUrl)
+    } catch (e) {
+      const message = e instanceof Error ? e.message : 'Sign-in failed unexpectedly.'
+      setError(message)
+      toast.error(message)
+    } finally {
+      setLoading(false)
     }
-
-    router.push(result.url ?? callbackUrl)
   }
 
   return (
