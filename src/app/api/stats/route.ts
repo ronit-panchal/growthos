@@ -90,8 +90,6 @@ export async function GET(request: NextRequest) {
       0
     );
 
-    // If no data exists in the database, return demo-friendly zeros
-    // The frontend can detect this and show demo data instead
     const stats = {
       totalLeads,
       qualifiedLeads,

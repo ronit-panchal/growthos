@@ -4,6 +4,8 @@
 
 GrowthOS is a comprehensive SaaS platform designed for agencies and businesses to accelerate growth through intelligent lead capture, AI-powered website audits, automated outreach campaigns, and professional proposal generation.
 
+**Current codebase:** production-oriented foundation—public marketing pages, Supabase-backed auth (NextAuth), Postgres/Prisma API routes, optional Razorpay, and React Email hooks. Full CRM-style dashboards are intentionally **not** bundled as demo UI so you ship real customer data only.
+
 ![GrowthOS](https://img.shields.io/badge/GrowthOS-v0.2.0-emerald)
 ![Next.js](https://img.shields.io/badge/Next.js-16-black)
 ![React](https://img.shields.io/badge/React-19-blue)
@@ -126,14 +128,14 @@ The platform is built with a modern emerald/green theme, supports dark/light mod
 - **Animations**: [Framer Motion](https://www.framer.com/motion/) - Smooth page transitions
 - **Icons**: [Lucide React](https://lucide.dev/) - Modern icon library
 - **Charts**: [Recharts](https://recharts.org/) - Composable charting library
-- **State Management**: [Zustand](https://github.com/pmndrs/zustand) - Lightweight state management
+- **Session**: [NextAuth.js](https://next-auth.js.org/) client session where needed
 - **Forms**: [React Hook Form](https://react-hook-form.com/) + [Zod](https://zod.dev/) - Form validation
 
 ### Backend
-- **API**: Next.js API Routes with Edge Runtime support
-- **Database**: [Prisma](https://www.prisma.io/) ORM with SQLite
-- **AI Integration**: [z-ai-web-dev-sdk](https://www.npmjs.com/package/z-ai-web-dev-sdk) for AI features
-- **Authentication**: NextAuth.js (configured for extensibility)
+- **API**: Next.js App Router API routes
+- **Database**: [Prisma](https://www.prisma.io/) ORM with PostgreSQL (e.g. Supabase)
+- **AI Integration**: [z-ai-web-dev-sdk](https://www.npmjs.com/package/z-ai-web-dev-sdk) for AI features when configured
+- **Authentication**: NextAuth.js (credentials backed by Supabase Auth)
 
 ### Development Tools
 - **Linting**: ESLint with Next.js config
@@ -188,52 +190,20 @@ The platform is built with a modern emerald/green theme, supports dark/light mod
 
 ```
 growthos/
-├── src/
-│   ├── app/                    # Next.js App Router
-│   │   ├── api/               # API routes
-│   │   │   ├── activities/    # Activity tracking endpoints
-│   │   │   ├── audits/        # Website audit endpoints
-│   │   │   ├── leads/         # Lead CRUD endpoints
-│   │   │   ├── outreach/      # Campaign generation endpoints
-│   │   │   ├── proposals/     # Proposal CRUD endpoints
-│   │   │   ├── stats/         # Dashboard statistics
-│   │   │   └── route.ts       # Health check endpoint
-│   │   ├── globals.css        # Global styles with theme
-│   │   ├── layout.tsx         # Root layout with providers
-│   │   └── page.tsx           # Main app shell
-│   ├── components/
-│   │   ├── layout/            # Layout components
-│   │   │   ├── app-shell.tsx  # Main app layout with sidebar
-│   │   │   └── top-bar.tsx    # Top navigation bar
-│   │   ├── modules/           # Feature modules
-│   │   │   ├── admin.tsx      # Admin panel
-│   │   │   ├── audit.tsx      # AI audit module
-│   │   │   ├── billing.tsx    # Billing & subscriptions
-│   │   │   ├── dashboard.tsx  # Main dashboard
-│   │   │   ├── leads.tsx      # Leads CRM
-│   │   │   ├── outreach.tsx   # AI outreach generator
-│   │   │   ├── proposals.tsx  # Proposal builder
-│   │   │   └── settings.tsx   # User settings
-│   │   ├── ui/                # shadcn/ui components
-│   │   ├── error-boundary.tsx # Error handling
-│   │   ├── module-skeleton.tsx # Loading states
-│   │   └── theme-provider.tsx # Dark/light mode
-│   ├── hooks/                 # Custom React hooks
-│   ├── lib/                   # Utility libraries
-│   │   ├── animations.ts      # Shared Framer Motion variants
-│   │   ├── demo-data.ts       # Mock data for development
-│   │   ├── store.ts           # Zustand state management
-│   │   └── utils.ts           # Utility functions
-│   └── types/                 # TypeScript type definitions
-├── prisma/
-│   └── schema.prisma          # Database schema
-├── public/                    # Static assets
-├── db/                        # SQLite database files
-├── components.json            # shadcn/ui configuration
-├── next.config.ts             # Next.js configuration
-├── tailwind.config.ts         # Tailwind CSS configuration
-├── tsconfig.json              # TypeScript configuration
-└── package.json               # Dependencies and scripts
+├── src/app/
+│   ├── (marketing)/     # Public landing + pricing
+│   ├── (auth)/          # Login + register
+│   ├── (dashboard)/     # Protected app (session required)
+│   ├── api/             # REST endpoints (leads, audits, auth, payments, teams, …)
+│   ├── layout.tsx
+│   └── globals.css
+├── src/components/      # UI + providers (shadcn/ui, SessionProvider, …)
+├── src/lib/             # auth, db, email, tenant, plan limits, Razorpay helper
+├── emails/              # React Email templates
+├── prisma/schema.prisma # PostgreSQL schema
+├── public/
+├── middleware.ts        # NextAuth route protection
+└── .env.example
 ```
 
 ---
@@ -242,20 +212,18 @@ growthos/
 
 Create a `.env` file in the root directory with the following variables:
 
+See [.env.example](.env.example) for the full template. Minimum for local/dev:
+
 ```env
-# Database
-DATABASE_URL="file:./db/custom.db"
-
-# Next.js
+DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/DATABASE"
 NEXT_PUBLIC_APP_URL=http://localhost:3000
-
-# AI Service (optional - falls back to demo mode)
-# Z_API_KEY=your_api_key_here
-
-# Authentication (optional)
-# NEXTAUTH_SECRET=your_secret_here
-# NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_SECRET="generate-a-long-random-secret"
+NEXT_PUBLIC_SUPABASE_URL="https://YOUR_PROJECT.supabase.co"
+NEXT_PUBLIC_SUPABASE_ANON_KEY="YOUR_ANON_KEY"
 ```
+
+Billing (Razorpay) and SMTP are optional until you enable payments and transactional email.
 
 ---
 

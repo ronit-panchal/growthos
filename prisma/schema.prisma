@@ -3,8 +3,35 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
+}
+
+model Account {
+  id                 String  @id @default(cuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String? @db.Text
+  access_token       String? @db.Text
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String? @db.Text
+  session_state      String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model User {
@@ -19,11 +46,21 @@ model User {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
+  accounts      Account[]
+  sessions      Session[]
   leads         Lead[]
   audits        AuditJob[]
   outreach      OutreachCampaign[]
   proposals     Proposal[]
   activities    Activity[]
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
 }
 
 model Lead {
@@ -38,7 +75,7 @@ model Lead {
   score         Int       @default(0)
   value         Float     @default(0)
   tags          String?   // JSON string of tags array
-  notes         String?   // JSON string of notes array
+  notes         String?   // JSON string of notes array @db.Text
   website       String?
   linkedin      String?
   lastContactAt DateTime?
@@ -60,8 +97,8 @@ model AuditJob {
   uxScore       Int?
   performance   Int?
   accessibility Int?
-  findings      String?   // JSON string of findings array
-  suggestions   String?   // JSON string of suggestions array
+  findings      String?   // JSON string of findings array @db.Text
+  suggestions   String?   // JSON string of suggestions array @db.Text
   error         String?
   completedAt   DateTime?
   createdAt     DateTime  @default(now())
@@ -81,7 +118,7 @@ model OutreachCampaign {
   subjectLine   String?
   content       String?
   cta           String?
-  sequence      String?   // JSON string of sequence steps
+  sequence      String?   // JSON string of sequence steps @db.Text
   status        String    @default("draft") // draft, active, completed
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -96,8 +133,8 @@ model Proposal {
   clientName    String
   clientEmail   String?
   status        String    @default("draft") // draft, sent, viewed, accepted, rejected
-  sections      String?   // JSON string of proposal sections
-  pricing       String?   // JSON string of pricing items
+  sections      String?   // JSON string of proposal sections @db.Text
+  pricing       String?   // JSON string of pricing items @db.Text
   totalValue    Float     @default(0)
   shareToken    String?   @unique
   notes         String?
@@ -116,7 +153,7 @@ model Activity {
   type          String    // lead_created, audit_completed, outreach_sent, proposal_sent, etc.
   title         String
   description   String?
-  metadata      String?   // JSON string of additional data
+  metadata      String?   // JSON string of additional data @db.Text
   createdAt     DateTime  @default(now())
 
   userId        String
