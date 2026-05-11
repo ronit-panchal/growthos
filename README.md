@@ -1,263 +1,233 @@
-# GrowthOS
+#GrowthOS
 
-GrowthOS is a SaaS product for agencies, consultants, and outbound teams. It combines lead capture, website audits, AI-assisted outreach, proposal generation, pricing, and owner analytics in one Next.js application.
+GrowthOS is an AI-powered business growth operating system designed for agencies, startups, consultants, and modern sales teams.
 
-This repo is set up to support the full customer journey:
+It helps businesses manage their entire growth workflow from one platform — including lead management, website audits, outreach generation, proposal creation, analytics, and operational tracking.
 
-- A public landing page that explains the product.
-- A pricing page that can stay in free-beta mode until billing keys are added.
-- Account creation with Supabase Auth.
-- Email-confirmation-aware login with NextAuth session handling.
-- A protected dashboard for day-to-day work.
-- A hidden owner-only admin route at `/dashboard/admin`.
+Instead of using multiple disconnected tools, GrowthOS brings everything together into one centralized SaaS platform built for speed, automation, and productivity.
 
-## What The Product Does
+Why GrowthOS Exists
 
-GrowthOS helps a business move from interest to offer:
+Most startups and agencies struggle with:
 
-1. A prospect becomes a lead.
-2. The team runs a website audit or qualifies the lead manually.
-3. GrowthOS generates outreach and proposal drafts.
-4. The dashboard shows pipeline, deal value, and operational activity.
-5. Owners can review platform-wide analytics in the hidden admin area.
+Managing leads across different platforms
+Slow manual outreach processes
+Poor sales follow-up systems
+Time-consuming proposal creation
+Lack of operational visibility
+Disconnected team workflows
+Wasted productivity due to tool overload
 
-## Main Product Areas
+GrowthOS solves these problems by creating a single AI-assisted workspace that helps businesses move faster, close deals more efficiently, and scale operations with less manual work.
 
-### Public marketing
+What GrowthOS Does
 
-- `/`
-  - Explains the value proposition and workflow.
-- `/pricing`
-  - Shows plans and routes users into signup.
-  - If Razorpay keys are missing, pricing stays in safe free-beta mode.
+GrowthOS helps businesses move from:
 
-### Authentication
+Visitor → Lead → Outreach → Proposal → Client
 
-- `/register`
-  - Creates a Supabase user.
-  - If email confirmation is enabled in Supabase, the user is prompted to verify first.
-- `/login`
-  - Signs in with Supabase password auth.
-  - Creates the app session through NextAuth.
+The platform streamlines the entire customer acquisition pipeline.
 
-### Protected app
+Businesses can:
 
-- `/dashboard`
-  - Main workspace overview with analytics and quick actions.
-- `/dashboard/leads?action=new`
-  - Create a new lead.
-- `/dashboard/audits?action=new`
-  - Run a website audit.
-- `/dashboard/outreach?action=new`
-  - Generate outreach content.
-- `/dashboard/proposals?action=new`
-  - Generate a proposal draft.
-- `/dashboard/admin`
-  - Hidden owner/admin route for platform analytics.
+Capture and manage leads
+Run website audits
+Generate AI-assisted outreach messages
+Create proposals instantly
+Track deals and pipeline activity
+Monitor operational analytics
+Manage productivity from one dashboard
+How GrowthOS Helps Startups & Businesses
+For Startups
 
-## Tech Stack
+GrowthOS helps startups:
 
-- Next.js 16 App Router
-- React 19
-- TypeScript
-- Tailwind CSS 4
-- Prisma
-- PostgreSQL
-- Supabase Auth
-- NextAuth
-- Recharts
-- Nodemailer
-- Razorpay
+Launch faster with structured workflows
+Save time using AI automation
+Reduce operational chaos
+Track growth metrics in real time
+Manage sales without large teams
+Increase productivity with centralized tools
 
-## Roles And Access
+Instead of hiring multiple people early, startups can automate major parts of their outbound and sales operations.
 
-- `agency_owner`
-  - Default primary account role.
-  - Can access the hidden admin page.
-- `admin`
-  - Can access the hidden admin page.
-- `team_member`
-  - Uses the workspace but should not access owner-level analytics.
+For Agencies
 
-## Important Product Behavior
+Agencies can use GrowthOS to:
 
-### Email verification
+Manage clients and leads
+Generate outreach campaigns
+Run SEO and website audits
+Create proposals quickly
+Monitor team activity
+Track revenue pipeline
+Improve client acquisition systems
 
-GrowthOS supports email verification through Supabase Auth.
+This allows agencies to scale operations without increasing operational complexity.
 
-To make verification links work correctly on Vercel and on any device:
+For Sales & Outbound Teams
 
-- Set the correct Supabase Site URL.
-- Add your Vercel production domain to Supabase redirect allowlists.
-- Keep `NEXT_PUBLIC_APP_URL` and `NEXTAUTH_URL` aligned with the deployed domain.
+GrowthOS improves outbound efficiency by helping teams:
 
-If confirmation is enabled in Supabase, users will:
+Organize prospect data
+Automate repetitive tasks
+Generate personalized outreach
+Track campaign activity
+Improve follow-up consistency
+Close deals faster
+Core Features
+AI-Powered Outreach
 
-1. Create an account.
-2. Receive a confirmation email.
-3. Verify on any device.
-4. Return and sign in.
+Generate professional outreach content instantly using AI.
 
-### Billing safe mode
+Perfect for:
 
-Pricing and checkout are intentionally safe before billing is live.
+Cold emails
+Client pitches
+Follow-ups
+Lead nurturing
+Website Audits
 
-If these env vars are missing:
+Run website audits to identify:
 
-- `RAZORPAY_KEY_ID`
-- `RAZORPAY_KEY_SECRET`
-- `RAZORPAY_WEBHOOK_SECRET`
+Design issues
+Performance problems
+SEO opportunities
+Conversion improvements
 
-Then:
+This creates stronger sales angles for potential clients.
 
-- The pricing page still works.
-- Users can still sign up.
-- Checkout APIs return a clear "not configured" response.
-- The app behaves like a free beta until billing is turned on.
+Proposal Generation
 
-## Environment Variables
+Create professional proposals quickly without manually writing every document from scratch.
 
-Minimum required:
+Lead Management
 
-```env
-DATABASE_URL=
-NEXT_PUBLIC_APP_URL=
-NEXTAUTH_URL=
-NEXTAUTH_SECRET=
-NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
-SUPABASE_SERVICE_ROLE_KEY=
-```
+Track:
 
-Optional but recommended:
+New leads
+Qualified prospects
+Pipeline stages
+Deal value
+Activity history
+Productivity Dashboard
 
-```env
-OPENAI_API_KEY=
-SMTP_HOST=
-SMTP_PORT=
-SMTP_USER=
-SMTP_PASS=
-SMTP_FROM=
-RAZORPAY_KEY_ID=
-RAZORPAY_KEY_SECRET=
-RAZORPAY_WEBHOOK_SECRET=
-```
+GrowthOS gives businesses:
 
-## Local Development
+Operational visibility
+Team activity tracking
+Pipeline analytics
+Performance insights
+Growth metrics
 
-Use Node.js 20.9+.
+Everything stays centralized inside one dashboard.
 
-Install and run:
+Main Product Areas
+Public Marketing Pages
+/
 
-```bash
-npm install
-npm run db:generate
-npm run db:push
-npm run dev
-```
+Landing page explaining the platform and workflow.
 
-Quality checks:
+/pricing
 
-```bash
-npm run lint
-npm run build
-```
+Pricing page with free-beta support before billing activation.
 
-## Deployment
+Authentication
+/register
 
-This project is already shaped for Vercel deployment.
+Create accounts using Supabase Auth.
 
-Checklist:
+/login
 
-1. Push the repo to GitHub.
-2. Connect the repo to Vercel.
-3. Add all required environment variables in Vercel.
-4. Confirm Supabase Site URL and redirect configuration.
-5. Deploy.
-6. Test signup, email verification, login, dashboard access, and the hidden admin route.
+Secure authentication using Supabase + NextAuth session handling.
 
-## Hidden Admin Route
+Protected Dashboard
+/dashboard
 
-Owner analytics live at:
+Main business workspace.
 
-```txt
+/dashboard/leads?action=new
+
+Create and manage leads.
+
+/dashboard/audits?action=new
+
+Run website audits.
+
+/dashboard/outreach?action=new
+
+Generate outreach content.
+
+/dashboard/proposals?action=new
+
+Generate proposal drafts.
+
 /dashboard/admin
-```
 
-This page is intended for:
+Hidden owner/admin analytics dashboard.
 
-- The founder
-- Agency owners
-- Platform admins
+Productivity Benefits
 
-It is not meant to be part of the public marketing flow.
+GrowthOS increases productivity by:
 
-## Data Model Summary
+Reducing manual workflows
+Centralizing business operations
+Automating repetitive tasks
+Improving team coordination
+Speeding up sales processes
+Reducing tool switching
+Providing real-time analytics
 
-Main Prisma models:
+Businesses spend less time managing systems and more time growing revenue.
 
-- `User`
-- `Lead`
-- `AuditJob`
-- `OutreachCampaign`
-- `Proposal`
-- `Activity`
-- `Subscription`
-- NextAuth support models: `Account`, `Session`, `VerificationToken`
+Tech Stack
+Next.js 16
+React 19
+TypeScript
+Tailwind CSS 4
+Prisma
+PostgreSQL
+Supabase Auth
+NextAuth
+Recharts
+Nodemailer
+Razorpay
+Roles & Access
+agency_owner
 
-## Operational Notes For The Team
+Full platform access including admin analytics.
 
-### For product owners
+admin
 
-- Use the public pages to explain value clearly.
-- Use pricing in free-beta mode until billing is ready.
-- Use `/dashboard/admin` to review adoption and internal product health.
+Operational and analytics access.
 
-### For operators / employees
+team_member
 
-- Start with leads.
-- Run audits when you need a stronger sales angle.
-- Generate outreach after qualification.
-- Generate proposals when a lead shows buying intent.
+Workspace access without owner-level analytics.
+Future Vision
 
-### For developers
+GrowthOS is designed to evolve into a complete AI-powered business operating system where startups and agencies can manage:
 
-- App data is scoped from the authenticated session.
-- Supabase Auth and Prisma user records are synchronized in the app flow.
-- Public checkout should remain disabled until billing keys are added.
-- Avoid reintroducing client-supplied `userId` access patterns for protected data.
+Growth
+Sales
+Operations
+Outreach
+Client acquisition
+Analytics
+Automation
 
-## Current Known Gaps
+All from a single platform.
 
-These are the main remaining limitations to address before a larger commercial rollout:
+Final Goal
 
-- Team management is still memory-backed rather than fully relational.
-- Usage tracking is still memory-backed rather than persisted.
-- Billing is intentionally inactive until Razorpay keys are added.
-- Fresh dependency lock alignment may need `npm install` once in your final clean repo state.
+GrowthOS is not just another CRM.
 
-## Repo Cleanup Done
+It is a productivity-focused growth infrastructure designed to help businesses:
 
-This repo has already been cleaned to remove:
-
-- Duplicate dashboard fetch components that were no longer used
-- Extra markdown setup files
-- Duplicate audit route files
-- Template and helper folders that were not part of the product flow
-
-## Recommended Final Manual Test
-
-Before calling it production-ready, test this full story on Vercel:
-
-1. Visit the landing page.
-2. Open pricing.
-3. Create an account.
-4. Confirm the email link.
-5. Sign in.
-6. Create a lead.
-7. Run an audit.
-8. Generate outreach.
-9. Generate a proposal.
-10. Visit `/dashboard/admin` with an owner account.
-
-If all of that works on the deployed domain, the product flow is in strong shape.
+Work faster
+Scale smarter
+Automate operations
+Increase revenue
+Improve efficiency
+Build sustainable growth systems
+without relying on dozens of disconnected tools.
