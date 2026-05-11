@@ -1,28 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import crypto from 'crypto';
+import { requireTenantContext } from '@/lib/tenant';
 
 // GET /api/proposals - List proposals for a user
 export async function GET(request: NextRequest) {
   try {
+    const tenant = await requireTenantContext();
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId');
-
-    if (!userId) {
-      return NextResponse.json(
-        { error: 'userId is required' },
-        { status: 400 }
-      );
-    }
+    const limit = parseInt(searchParams.get('limit') || '20');
 
     const proposals = await db.proposal.findMany({
-      where: { userId },
+      where: { userId: tenant.userId },
       orderBy: { createdAt: 'desc' },
+      take: limit,
     });
 
     return NextResponse.json({ proposals });
   } catch (error) {
     console.error('Error fetching proposals:', error);
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     return NextResponse.json(
       { error: 'Failed to fetch proposals' },
       { status: 500 }
@@ -33,6 +32,7 @@ export async function GET(request: NextRequest) {
 // POST /api/proposals - Create a new proposal
 export async function POST(request: NextRequest) {
   try {
+    const tenant = await requireTenantContext();
     const body = await request.json();
     const {
       title,
@@ -41,12 +41,11 @@ export async function POST(request: NextRequest) {
       sections,
       pricing,
       totalValue,
-      userId,
     } = body;
 
-    if (!title || !clientName || !userId) {
+    if (!title || !clientName) {
       return NextResponse.json(
-        { error: 'title, clientName, and userId are required' },
+        { error: 'title and clientName are required' },
         { status: 400 }
       );
     }
@@ -61,7 +60,7 @@ export async function POST(request: NextRequest) {
         totalValue: totalValue ? parseFloat(String(totalValue)) : 0,
         shareToken: crypto.randomUUID(),
         status: 'draft',
-        userId,
+        userId: tenant.userId,
       },
     });
 
@@ -71,13 +70,16 @@ export async function POST(request: NextRequest) {
         type: 'proposal_created',
         title: 'Proposal created',
         description: `"${title}" proposal created for ${clientName}`,
-        userId,
+        userId: tenant.userId,
       },
     });
 
     return NextResponse.json({ proposal }, { status: 201 });
   } catch (error) {
     console.error('Error creating proposal:', error);
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     return NextResponse.json(
       { error: 'Failed to create proposal' },
       { status: 500 }

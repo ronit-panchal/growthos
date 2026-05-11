@@ -1,16 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { requireTenantContext } from '@/lib/tenant';
 
 // GET /api/proposals/[id] - Get proposal by ID
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const tenant = await requireTenantContext();
     const { id } = await params;
 
-    const proposal = await db.proposal.findUnique({
-      where: { id },
+    const proposal = await db.proposal.findFirst({
+      where: { id, userId: tenant.userId },
     });
 
     if (!proposal) {
@@ -23,6 +25,9 @@ export async function GET(
     return NextResponse.json({ proposal });
   } catch (error) {
     console.error('Error fetching proposal:', error);
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     return NextResponse.json(
       { error: 'Failed to fetch proposal' },
       { status: 500 }
@@ -36,6 +41,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const tenant = await requireTenantContext();
     const { id } = await params;
     const body = await request.json();
     const {
@@ -52,7 +58,9 @@ export async function PUT(
     } = body;
 
     // Check if proposal exists
-    const existingProposal = await db.proposal.findUnique({ where: { id } });
+    const existingProposal = await db.proposal.findFirst({
+      where: { id, userId: tenant.userId },
+    });
     if (!existingProposal) {
       return NextResponse.json(
         { error: 'Proposal not found' },
@@ -116,6 +124,9 @@ export async function PUT(
     return NextResponse.json({ proposal });
   } catch (error) {
     console.error('Error updating proposal:', error);
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     return NextResponse.json(
       { error: 'Failed to update proposal' },
       { status: 500 }
@@ -125,14 +136,17 @@ export async function PUT(
 
 // DELETE /api/proposals/[id] - Delete proposal by ID
 export async function DELETE(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const tenant = await requireTenantContext();
     const { id } = await params;
 
     // Check if proposal exists
-    const existingProposal = await db.proposal.findUnique({ where: { id } });
+    const existingProposal = await db.proposal.findFirst({
+      where: { id, userId: tenant.userId },
+    });
     if (!existingProposal) {
       return NextResponse.json(
         { error: 'Proposal not found' },
@@ -147,6 +161,9 @@ export async function DELETE(
     return NextResponse.json({ message: 'Proposal deleted successfully' });
   } catch (error) {
     console.error('Error deleting proposal:', error);
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     return NextResponse.json(
       { error: 'Failed to delete proposal' },
       { status: 500 }

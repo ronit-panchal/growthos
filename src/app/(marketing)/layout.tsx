@@ -1,34 +1,37 @@
 import Link from 'next/link'
 import type { ReactNode } from 'react'
+import { ArrowUpRight } from 'lucide-react'
 
 export default function MarketingLayout({ children }: { children: ReactNode }) {
   return (
-    <div className="flex min-h-screen flex-col">
-      <header className="border-b">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-6 py-4">
-          <Link href="/" className="font-semibold tracking-tight">
-            GrowthOS
+    <div className="flex min-h-screen flex-col bg-[radial-gradient(circle_at_top,rgba(16,185,129,0.12),transparent_30%),linear-gradient(180deg,rgba(248,250,252,1),rgba(240,253,250,0.65))] dark:bg-[radial-gradient(circle_at_top,rgba(16,185,129,0.16),transparent_22%),linear-gradient(180deg,rgba(12,15,20,1),rgba(10,14,18,1))]">
+      <header className="sticky top-0 z-30 border-b border-white/10 bg-background/85 backdrop-blur">
+        <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-6 py-4">
+          <Link href="/" className="inline-flex items-center gap-3 font-semibold tracking-tight">
+            <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/12 text-primary">G</span>
+            <span>
+              <span className="block text-xs uppercase tracking-[0.24em] text-muted-foreground">GrowthOS</span>
+              <span className="block text-sm">Agency revenue operating system</span>
+            </span>
           </Link>
-          <nav className="flex flex-wrap items-center gap-4 text-sm">
-            <Link href="/pricing" className="text-muted-foreground hover:text-foreground">
+          <nav className="hidden items-center gap-6 text-sm md:flex">
+            <Link href="/pricing" className="text-muted-foreground transition hover:text-foreground">
               Pricing
             </Link>
-            <Link href="/login" className="text-muted-foreground hover:text-foreground">
+            <Link href="/login" className="text-muted-foreground transition hover:text-foreground">
               Log in
             </Link>
             <Link
               href="/register"
-              className="rounded-md bg-primary px-3 py-1.5 font-medium text-primary-foreground hover:opacity-90"
+              className="inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 font-medium text-primary-foreground transition hover:opacity-90"
             >
-              Get started
+              Start free
+              <ArrowUpRight className="h-4 w-4" />
             </Link>
           </nav>
         </div>
       </header>
       <div className="flex-1">{children}</div>
-      <footer className="border-t py-8 text-center text-sm text-muted-foreground">
-        <p>© {new Date().getFullYear()} GrowthOS. All rights reserved.</p>
-      </footer>
     </div>
   )
 }

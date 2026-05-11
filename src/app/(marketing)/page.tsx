@@ -1,82 +1,158 @@
 import Link from 'next/link'
+import { ArrowRight, CheckCircle2, FileText, Megaphone, SearchCheck, ShieldCheck, Target } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import { Card, CardContent } from '@/components/ui/card'
 
-const features = [
+const pillars = [
   {
-    title: 'Lead & pipeline CRM',
-    body: 'Store and progress leads via Prisma-backed APIs.',
+    icon: Target,
+    title: 'Capture revenue opportunities',
+    body: 'Create a structured lead pipeline with score, stage, source, value, and the context your team needs to act quickly.',
   },
   {
-    title: 'AI audits & outreach',
-    body: 'Run audits and generate outreach when your AI credentials are wired.',
+    icon: SearchCheck,
+    title: 'Turn audits into trust',
+    body: 'Run website audits that highlight SEO, UX, performance, and accessibility gaps so your sales pitch starts with proof.',
   },
   {
-    title: 'Teams & isolation',
-    body: 'JWT sessions with workspace scoping ready for multi-tenant rules.',
+    icon: Megaphone,
+    title: 'Generate outreach faster',
+    body: 'Produce outreach drafts for cold email, follow-up, and LinkedIn without switching between chat tools and spreadsheets.',
   },
   {
-    title: 'Billing when you need it',
-    body: 'Razorpay checkout and webhooks activate only after you add keys.',
+    icon: FileText,
+    title: 'Move from interest to proposal',
+    body: 'Package scope, pricing, and recommendations into proposals that feel like the next step instead of another separate workflow.',
   },
+]
+
+const workflow = [
+  'A visitor becomes a lead.',
+  'You run an audit or qualify the opportunity.',
+  'GrowthOS helps your team prepare outreach and a proposal.',
+  'You track deal momentum in one dashboard instead of scattered tools.',
+]
+
+const trustPoints = [
+  'Email verification-compatible sign-up flow via Supabase Auth.',
+  'Workspace-scoped session protection for app data.',
+  'Postgres + Prisma data model ready for real customer records.',
+  'Billing can stay disabled safely until you add Razorpay keys.',
 ]
 
 export default function MarketingHomePage() {
   return (
-    <main className="mx-auto max-w-6xl px-6 py-16">
-      <section className="grid gap-12 md:grid-cols-2 md:items-center">
+    <main>
+      <section className="mx-auto grid max-w-7xl gap-10 px-6 py-16 lg:grid-cols-[1.15fr_.85fr] lg:py-24">
         <div>
-          <p className="text-sm font-medium text-primary">GrowthOS for agencies</p>
-          <h1 className="mt-3 text-4xl font-semibold tracking-tight lg:text-5xl">
-            One workspace for pipeline, audits, and outreach.
+          <Badge variant="outline" className="rounded-full border-primary/30 bg-background/70 px-3 py-1 text-xs uppercase tracking-[0.2em]">
+            Built for agencies and growth teams
+          </Badge>
+          <h1 className="mt-6 max-w-4xl text-5xl font-semibold tracking-tight sm:text-6xl">
+            Turn leads, audits, outreach, and proposals into one sellable operating system.
           </h1>
-          <p className="mt-4 text-lg text-muted-foreground">
-            Ship a serious SaaS foundation: authenticated app shell, Postgres data layer, optional payments, and APIs
-            you can extend without ripping out demo cruft.
+          <p className="mt-6 max-w-2xl text-lg text-muted-foreground">
+            GrowthOS gives your agency a modern SaaS front door and a delivery-ready workspace behind it, so new users understand the value, choose a plan, verify email, log in, and start working without confusion.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
               href="/register"
-              className="rounded-md bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:opacity-90"
+              className="inline-flex items-center gap-2 rounded-full bg-primary px-5 py-3 text-sm font-medium text-primary-foreground transition hover:opacity-90"
             >
-              Create account
+              Start free
+              <ArrowRight className="h-4 w-4" />
             </Link>
-            <Link href="/pricing" className="rounded-md border px-4 py-2.5 text-sm font-medium hover:bg-muted/50">
-              See pricing
+            <Link
+              href="/pricing"
+              className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-background/80 px-5 py-3 text-sm font-medium transition hover:bg-background"
+            >
+              Explore plans
             </Link>
           </div>
+          <div className="mt-10 grid gap-3 sm:grid-cols-2">
+            {trustPoints.map((point) => (
+              <div key={point} className="flex items-start gap-3 rounded-3xl border border-white/10 bg-background/65 px-4 py-4">
+                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                <p className="text-sm text-muted-foreground">{point}</p>
+              </div>
+            ))}
+          </div>
         </div>
-        <div className="rounded-xl border bg-card p-8 shadow-sm">
-          <h2 className="text-lg font-semibold">Production-minded defaults</h2>
-          <ul className="mt-6 space-y-4 text-sm text-muted-foreground">
-            <li>NextAuth credentials via Supabase—no toy single-user mode.</li>
-            <li>PostgreSQL via Prisma; no SQLite in production.</li>
-            <li>Optional Razorpay: APIs return explicit “not configured” until you enable billing.</li>
-          </ul>
+
+        <Card className="overflow-hidden border-white/10 bg-card/85 shadow-sm">
+          <CardContent className="p-6 sm:p-8">
+            <div className="rounded-[28px] border border-white/10 bg-[linear-gradient(135deg,rgba(16,185,129,0.14),rgba(14,165,233,0.12))] p-6">
+              <p className="text-xs uppercase tracking-[0.22em] text-muted-foreground">How GrowthOS works</p>
+              <div className="mt-6 space-y-4">
+                {workflow.map((item, index) => (
+                  <div key={item} className="flex items-start gap-4">
+                    <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-background/85 text-sm font-semibold text-primary">
+                      {index + 1}
+                    </span>
+                    <p className="pt-1 text-sm text-foreground">{item}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="mt-6 grid gap-3 sm:grid-cols-3">
+              <div className="rounded-3xl border border-white/10 bg-background/75 px-4 py-4">
+                <p className="text-sm text-muted-foreground">Best for</p>
+                <p className="mt-2 font-medium">Agencies, consultants, outbound teams</p>
+              </div>
+              <div className="rounded-3xl border border-white/10 bg-background/75 px-4 py-4">
+                <p className="text-sm text-muted-foreground">Launch mode</p>
+                <p className="mt-2 font-medium">Free beta until billing keys are added</p>
+              </div>
+              <div className="rounded-3xl border border-white/10 bg-background/75 px-4 py-4">
+                <p className="text-sm text-muted-foreground">Access</p>
+                <p className="mt-2 font-medium">Email verification + protected dashboard</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </section>
+
+      <section className="mx-auto max-w-7xl px-6 pb-8">
+        <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+          {pillars.map((pillar) => {
+            const Icon = pillar.icon
+            return (
+              <Card key={pillar.title} className="border-white/10 bg-card/80 shadow-sm">
+                <CardContent className="p-6">
+                  <span className="inline-flex rounded-2xl bg-primary/12 p-3 text-primary">
+                    <Icon className="h-5 w-5" />
+                  </span>
+                  <h2 className="mt-5 text-lg font-semibold">{pillar.title}</h2>
+                  <p className="mt-3 text-sm leading-6 text-muted-foreground">{pillar.body}</p>
+                </CardContent>
+              </Card>
+            )
+          })}
         </div>
       </section>
 
-      <section className="mt-24">
-        <h2 className="text-center text-2xl font-semibold tracking-tight">What you get</h2>
-        <div className="mt-10 grid gap-6 sm:grid-cols-2">
-          {features.map((item) => (
-            <article key={item.title} className="rounded-lg border bg-card p-6">
-              <h3 className="font-semibold">{item.title}</h3>
-              <p className="mt-2 text-sm text-muted-foreground">{item.body}</p>
-            </article>
-          ))}
+      <section className="mx-auto max-w-7xl px-6 py-16">
+        <div className="rounded-[32px] border border-white/10 bg-card/80 p-8 shadow-sm sm:p-10">
+          <div className="grid gap-8 lg:grid-cols-[1fr_.9fr]">
+            <div>
+              <p className="text-sm font-medium text-primary">Why buyers understand it quickly</p>
+              <h2 className="mt-3 text-3xl font-semibold tracking-tight">A public story and a private engine.</h2>
+              <p className="mt-4 max-w-2xl text-muted-foreground">
+                The marketing side explains the outcome. The dashboard proves the workflow. Together they make GrowthOS feel like a real business product instead of a stack of disconnected tools.
+              </p>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded-3xl border border-white/10 bg-background/70 px-4 py-4">
+                <p className="font-medium">Before purchase</p>
+                <p className="mt-2 text-sm text-muted-foreground">Clear positioning, plan comparison, and a low-friction entry point.</p>
+              </div>
+              <div className="rounded-3xl border border-white/10 bg-background/70 px-4 py-4">
+                <p className="font-medium">After purchase</p>
+                <p className="mt-2 text-sm text-muted-foreground">Workspace analytics, lead capture, audits, outreach, proposals, and owner oversight.</p>
+              </div>
+            </div>
+          </div>
         </div>
-      </section>
-
-      <section className="mt-24 rounded-xl border bg-muted/30 px-8 py-12 text-center">
-        <h2 className="text-xl font-semibold">Ready to run your workspace?</h2>
-        <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
-          Sign up and connect Postgres + Supabase. Add payments when you&apos;re ready to charge.
-        </p>
-        <Link
-          href="/register"
-          className="mt-6 inline-flex rounded-md bg-primary px-5 py-2.5 text-sm font-medium text-primary-foreground hover:opacity-90"
-        >
-          Get started
-        </Link>
       </section>
     </main>
   )

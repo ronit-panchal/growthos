@@ -1,16 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { requireTenantContext } from '@/lib/tenant';
 
 // GET /api/leads/[id] - Get lead by ID
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const tenant = await requireTenantContext();
     const { id } = await params;
 
-    const lead = await db.lead.findUnique({
-      where: { id },
+    const lead = await db.lead.findFirst({
+      where: { id, userId: tenant.userId },
       include: {
         activities: {
           orderBy: { createdAt: 'desc' },
@@ -29,6 +31,9 @@ export async function GET(
     return NextResponse.json({ lead });
   } catch (error) {
     console.error('Error fetching lead:', error);
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     return NextResponse.json(
       { error: 'Failed to fetch lead' },
       { status: 500 }
@@ -42,6 +47,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const tenant = await requireTenantContext();
     const { id } = await params;
     const body = await request.json();
     const {
@@ -61,7 +67,7 @@ export async function PUT(
     } = body;
 
     // Check if lead exists
-    const existingLead = await db.lead.findUnique({ where: { id } });
+    const existingLead = await db.lead.findFirst({ where: { id, userId: tenant.userId } });
     if (!existingLead) {
       return NextResponse.json(
         { error: 'Lead not found' },
@@ -107,6 +113,9 @@ export async function PUT(
     return NextResponse.json({ lead });
   } catch (error) {
     console.error('Error updating lead:', error);
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     return NextResponse.json(
       { error: 'Failed to update lead' },
       { status: 500 }
@@ -116,14 +125,15 @@ export async function PUT(
 
 // DELETE /api/leads/[id] - Delete lead by ID
 export async function DELETE(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const tenant = await requireTenantContext();
     const { id } = await params;
 
     // Check if lead exists
-    const existingLead = await db.lead.findUnique({ where: { id } });
+    const existingLead = await db.lead.findFirst({ where: { id, userId: tenant.userId } });
     if (!existingLead) {
       return NextResponse.json(
         { error: 'Lead not found' },
@@ -144,6 +154,9 @@ export async function DELETE(
     return NextResponse.json({ message: 'Lead deleted successfully' });
   } catch (error) {
     console.error('Error deleting lead:', error);
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     return NextResponse.json(
       { error: 'Failed to delete lead' },
       { status: 500 }

@@ -1,578 +1,263 @@
 # GrowthOS
 
-**AI-Powered Lead Generation & Agency Operating System**
+GrowthOS is a SaaS product for agencies, consultants, and outbound teams. It combines lead capture, website audits, AI-assisted outreach, proposal generation, pricing, and owner analytics in one Next.js application.
 
-GrowthOS is a comprehensive SaaS platform designed for agencies and businesses to accelerate growth through intelligent lead capture, AI-powered website audits, automated outreach campaigns, and professional proposal generation.
+This repo is set up to support the full customer journey:
 
-**Current codebase:** production-oriented foundation—public marketing pages, Supabase-backed auth (NextAuth), Postgres/Prisma API routes, optional Razorpay, and React Email hooks. Full CRM-style dashboards are intentionally **not** bundled as demo UI so you ship real customer data only.
+- A public landing page that explains the product.
+- A pricing page that can stay in free-beta mode until billing keys are added.
+- Account creation with Supabase Auth.
+- Email-confirmation-aware login with NextAuth session handling.
+- A protected dashboard for day-to-day work.
+- A hidden owner-only admin route at `/dashboard/admin`.
 
-![GrowthOS](https://img.shields.io/badge/GrowthOS-v0.2.0-emerald)
-![Next.js](https://img.shields.io/badge/Next.js-16-black)
-![React](https://img.shields.io/badge/React-19-blue)
-![TypeScript](https://img.shields.io/badge/TypeScript-5-blue)
-![Tailwind CSS](https://img.shields.io/badge/Tailwind-4-cyan)
-![Prisma](https://img.shields.io/badge/Prisma-6-brightgreen)
+## What The Product Does
 
----
+GrowthOS helps a business move from interest to offer:
 
-## Table of Contents
+1. A prospect becomes a lead.
+2. The team runs a website audit or qualifies the lead manually.
+3. GrowthOS generates outreach and proposal drafts.
+4. The dashboard shows pipeline, deal value, and operational activity.
+5. Owners can review platform-wide analytics in the hidden admin area.
 
-- [What is GrowthOS?](#what-is-growthos)
-- [Key Features](#key-features)
-- [Tech Stack](#tech-stack)
-- [Getting Started](#getting-started)
-- [Project Structure](#project-structure)
-- [Environment Variables](#environment-variables)
-- [Available Scripts](#available-scripts)
-- [Features Overview](#features-overview)
-- [API Routes](#api-routes)
-- [Database Schema](#database-schema)
-- [Deployment](#deployment)
-- [Contributing](#contributing)
-- [License](#license)
+## Main Product Areas
 
----
+### Public marketing
 
-## What is GrowthOS?
+- `/`
+  - Explains the value proposition and workflow.
+- `/pricing`
+  - Shows plans and routes users into signup.
+  - If Razorpay keys are missing, pricing stays in safe free-beta mode.
 
-GrowthOS is an all-in-one growth platform that combines:
+### Authentication
 
-- **Lead Management**: A full-featured CRM with Kanban pipeline view, lead scoring, and contact management
-- **AI Website Audits**: Automated website analysis providing SEO, UX, performance, and accessibility scores with actionable recommendations
-- **AI Outreach Generator**: Intelligent campaign creation with customizable sequences for email and LinkedIn outreach
-- **Proposal Builder**: Professional proposal creation with customizable sections, pricing tables, and status tracking
-- **Billing & Subscriptions**: Plan management with usage tracking and payment history
-- **Admin Dashboard**: Platform analytics, user management, and system monitoring
+- `/register`
+  - Creates a Supabase user.
+  - If email confirmation is enabled in Supabase, the user is prompted to verify first.
+- `/login`
+  - Signs in with Supabase password auth.
+  - Creates the app session through NextAuth.
 
-The platform is built with a modern emerald/green theme, supports dark/light mode, and is fully responsive across desktop, tablet, and mobile devices.
+### Protected app
 
----
-
-## Key Features
-
-### 1. Dashboard
-- **KPI Cards**: Real-time metrics for revenue, leads, conversions, and proposals with sparkline charts
-- **Revenue Analytics**: Interactive area chart showing monthly revenue trends
-- **Lead Sources**: Pie chart visualization of lead acquisition channels
-- **Pipeline Overview**: Bar chart showing leads across sales stages
-- **Activity Feed**: Real-time stream of platform activities
-- **Team Performance**: Leaderboard showing team member contributions
-- **AI Usage Stats**: Track AI credit consumption and limits
-
-### 2. Leads CRM
-- **Kanban Pipeline**: Drag-and-drop interface with 7 stages (New, Contacted, Qualified, Proposal, Negotiation, Won, Lost)
-- **Table View**: Sortable and filterable data grid with quick actions
-- **Lead Scoring**: Automatic scoring based on engagement and profile data
-- **Import/Export**: CSV import and export functionality
-- **Lead Detail Sheet**: Comprehensive view with notes, timeline, and quick actions
-- **Search & Filter**: Advanced filtering by status, source, score, and value
-
-### 3. AI Website Audit
-- **Website Scanner**: Enter any URL to run a comprehensive analysis
-- **Progress Tracking**: Real-time progress indicator during scanning
-- **Score Breakdown**: Individual scores for SEO, UX, Performance, and Accessibility
-- **Findings Report**: Categorized issues with severity levels (High, Medium, Low)
-- **AI Recommendations**: Actionable suggestions for improvement
-- **Export Reports**: Download detailed audit reports
-- **Audit History**: View all past audits with comparison capability
-
-### 4. AI Outreach Generator
-- **Campaign Creator**: AI-powered generation of outreach campaigns
-- **Template Gallery**: 6 pre-built templates (Cold SaaS, E-commerce Follow-up, LinkedIn Connection, etc.)
-- **Sequence Builder**: Visual timeline for multi-step outreach sequences
-- **Tone Customization**: Professional, Casual, Friendly, or Assertive tones
-- **Industry Targeting**: Customizable for different industries
-- **Campaign Management**: Draft, Active, Paused, and Completed status tracking
-- **Copy to Clipboard**: Quick copy for subject lines, content, and CTAs
-
-### 5. Proposal Generator
-- **Proposal Builder**: Create professional proposals with customizable sections
-- **Pricing Tables**: Dynamic pricing with line items, quantities, and totals
-- **Status Timeline**: Track proposal lifecycle (Draft → Sent → Viewed → Accepted/Rejected)
-- **Client Preview**: Shareable proposal view for clients
-- **Export to PDF**: Generate downloadable proposal documents
-- **Templates**: Save and reuse proposal sections
-
-### 6. Billing & Subscriptions
-- **Plan Management**: View current plan and usage statistics
-- **Pricing Grid**: Compare Free, Starter, Pro, and Enterprise plans
-- **Payment History**: Track invoices and payments
-- **Usage Analytics**: Monitor AI credits, audits, and proposals
-- **Subscription Controls**: Upgrade, downgrade, or cancel subscriptions
-
-### 7. Admin Panel
-- **Platform Stats**: Total users, active users, revenue, and MRR
-- **Revenue Chart**: Monthly recurring revenue tracking
-- **User Management**: View and manage all platform users
-- **AI Usage Analytics**: Platform-wide AI credit consumption
-- **System Settings**: Configure platform parameters
-- **Audit Log**: Track all administrative actions
-
-### 8. Settings
-- **Profile Management**: Update user profile and avatar
-- **Notification Preferences**: Configure email and in-app notifications
-- **Team Management**: Add/remove team members (Pro/Enterprise)
-- **Integrations**: Connect third-party tools
-- **Security Settings**: Password changes and 2FA (Enterprise)
-- **Danger Zone**: Account deletion and data export
-
----
+- `/dashboard`
+  - Main workspace overview with analytics and quick actions.
+- `/dashboard/leads?action=new`
+  - Create a new lead.
+- `/dashboard/audits?action=new`
+  - Run a website audit.
+- `/dashboard/outreach?action=new`
+  - Generate outreach content.
+- `/dashboard/proposals?action=new`
+  - Generate a proposal draft.
+- `/dashboard/admin`
+  - Hidden owner/admin route for platform analytics.
 
 ## Tech Stack
 
-### Frontend
-- **Framework**: [Next.js 16](https://nextjs.org/) - React framework with App Router
-- **Language**: [TypeScript 5](https://www.typescriptlang.org/) - Type-safe development
-- **Styling**: [Tailwind CSS 4](https://tailwindcss.com/) - Utility-first CSS
-- **UI Components**: [shadcn/ui](https://ui.shadcn.com/) - Beautiful accessible components
-- **Animations**: [Framer Motion](https://www.framer.com/motion/) - Smooth page transitions
-- **Icons**: [Lucide React](https://lucide.dev/) - Modern icon library
-- **Charts**: [Recharts](https://recharts.org/) - Composable charting library
-- **Session**: [NextAuth.js](https://next-auth.js.org/) client session where needed
-- **Forms**: [React Hook Form](https://react-hook-form.com/) + [Zod](https://zod.dev/) - Form validation
+- Next.js 16 App Router
+- React 19
+- TypeScript
+- Tailwind CSS 4
+- Prisma
+- PostgreSQL
+- Supabase Auth
+- NextAuth
+- Recharts
+- Nodemailer
+- Razorpay
 
-### Backend
-- **API**: Next.js App Router API routes
-- **Database**: [Prisma](https://www.prisma.io/) ORM with PostgreSQL (e.g. Supabase)
-- **AI Integration**: [z-ai-web-dev-sdk](https://www.npmjs.com/package/z-ai-web-dev-sdk) for AI features when configured
-- **Authentication**: NextAuth.js (credentials backed by Supabase Auth)
+## Roles And Access
 
-### Development Tools
-- **Linting**: ESLint with Next.js config
-- **Build**: Next.js with Turbopack for fast builds
-- **Package Manager**: npm
+- `agency_owner`
+  - Default primary account role.
+  - Can access the hidden admin page.
+- `admin`
+  - Can access the hidden admin page.
+- `team_member`
+  - Uses the workspace but should not access owner-level analytics.
 
----
+## Important Product Behavior
 
-## Getting Started
+### Email verification
 
-### Prerequisites
+GrowthOS supports email verification through Supabase Auth.
 
-- Node.js 18.17 or later
-- npm 9 or later
+To make verification links work correctly on Vercel and on any device:
 
-### Installation
+- Set the correct Supabase Site URL.
+- Add your Vercel production domain to Supabase redirect allowlists.
+- Keep `NEXT_PUBLIC_APP_URL` and `NEXTAUTH_URL` aligned with the deployed domain.
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/yourusername/growthos.git
-   cd growthos
-   ```
+If confirmation is enabled in Supabase, users will:
 
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
+1. Create an account.
+2. Receive a confirmation email.
+3. Verify on any device.
+4. Return and sign in.
 
-3. **Set up environment variables**
-   ```bash
-   cp .env.example .env
-   # Edit .env with your configuration
-   ```
+### Billing safe mode
 
-4. **Initialize the database**
-   ```bash
-   npx prisma generate
-   npx prisma db push
-   ```
+Pricing and checkout are intentionally safe before billing is live.
 
-5. **Run the development server**
-   ```bash
-   npm run dev
-   ```
+If these env vars are missing:
 
-6. **Open your browser**
-   Navigate to [http://localhost:3000](http://localhost:3000)
+- `RAZORPAY_KEY_ID`
+- `RAZORPAY_KEY_SECRET`
+- `RAZORPAY_WEBHOOK_SECRET`
 
----
+Then:
 
-## Project Structure
-
-```
-growthos/
-├── src/app/
-│   ├── (marketing)/     # Public landing + pricing
-│   ├── (auth)/          # Login + register
-│   ├── (dashboard)/     # Protected app (session required)
-│   ├── api/             # REST endpoints (leads, audits, auth, payments, teams, …)
-│   ├── layout.tsx
-│   └── globals.css
-├── src/components/      # UI + providers (shadcn/ui, SessionProvider, …)
-├── src/lib/             # auth, db, email, tenant, plan limits, Razorpay helper
-├── emails/              # React Email templates
-├── prisma/schema.prisma # PostgreSQL schema
-├── public/
-├── middleware.ts        # NextAuth route protection
-└── .env.example
-```
-
----
+- The pricing page still works.
+- Users can still sign up.
+- Checkout APIs return a clear "not configured" response.
+- The app behaves like a free beta until billing is turned on.
 
 ## Environment Variables
 
-Create a `.env` file in the root directory with the following variables:
-
-See [.env.example](.env.example) for the full template. Minimum for local/dev:
+Minimum required:
 
 ```env
-DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/DATABASE"
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-NEXTAUTH_URL=http://localhost:3000
-NEXTAUTH_SECRET="generate-a-long-random-secret"
-NEXT_PUBLIC_SUPABASE_URL="https://YOUR_PROJECT.supabase.co"
-NEXT_PUBLIC_SUPABASE_ANON_KEY="YOUR_ANON_KEY"
+DATABASE_URL=
+NEXT_PUBLIC_APP_URL=
+NEXTAUTH_URL=
+NEXTAUTH_SECRET=
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
 ```
 
-Billing (Razorpay) and SMTP are optional until you enable payments and transactional email.
+Optional but recommended:
 
----
+```env
+OPENAI_API_KEY=
+SMTP_HOST=
+SMTP_PORT=
+SMTP_USER=
+SMTP_PASS=
+SMTP_FROM=
+RAZORPAY_KEY_ID=
+RAZORPAY_KEY_SECRET=
+RAZORPAY_WEBHOOK_SECRET=
+```
 
-## Available Scripts
+## Local Development
 
-| Script | Description |
-|--------|-------------|
-| `npm run dev` | Start development server on port 3000 |
-| `npm run build` | Create production build |
-| `npm run start` | Start production server |
-| `npm run lint` | Run ESLint on all files |
-| `npm run db:push` | Push Prisma schema to database |
-| `npm run db:generate` | Generate Prisma Client |
-| `npm run db:migrate` | Run database migrations |
-| `npm run db:reset` | Reset database (⚠️ destructive) |
+Use Node.js 20.9+.
 
----
-
-## Features Overview
-
-### Demo Mode
-The application includes comprehensive demo data that loads automatically when external services (like AI APIs) are unavailable. This ensures the platform is fully functional for demonstrations and development without requiring API keys.
-
-### Responsive Design
-All modules are optimized for:
-- **Desktop**: Full sidebar navigation, multi-column layouts
-- **Tablet**: Collapsible sidebar, adapted grid layouts
-- **Mobile**: Horizontal scroll for tables/Kanban, stacked layouts
-
-### Dark/Light Mode
-Built-in theme support with:
-- System preference detection
-- Manual toggle in UI
-- Persistent preference storage
-- Consistent emerald color scheme across both modes
-
----
-
-## API Routes
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/api` | GET | Health check |
-| `/api/leads` | GET/POST | List/create leads |
-| `/api/leads/[id]` | GET/PUT/DELETE | Lead operations |
-| `/api/audits` | GET/POST | List/create audits |
-| `/api/audits/[id]` | GET | Get audit details |
-| `/api/audits/run` | POST | Run new website audit |
-| `/api/outreach` | GET/POST | List/create campaigns |
-| `/api/outreach/generate` | POST | AI generate campaign |
-| `/api/proposals` | GET/POST | List/create proposals |
-| `/api/proposals/[id]` | GET/PUT/DELETE | Proposal operations |
-| `/api/activities` | GET | Get recent activities |
-| `/api/stats` | GET | Get dashboard statistics |
-
----
-
-## Database Schema
-
-### Models
-
-- **User**: Platform users with roles (agency_owner, team_member, admin)
-- **Lead**: CRM leads with status tracking and scoring
-- **AuditJob**: Website audit records with scores and findings
-- **OutreachCampaign**: AI-generated outreach campaigns
-- **Proposal**: Client proposals with sections and pricing
-- **Activity**: Activity feed entries
-- **Subscription**: User subscription and billing info
-
----
-
-## Deployment
-
-### Build for Production
+Install and run:
 
 ```bash
+npm install
+npm run db:generate
+npm run db:push
+npm run dev
+```
+
+Quality checks:
+
+```bash
+npm run lint
 npm run build
 ```
 
-### Deploy to Vercel
+## Deployment
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/yourusername/growthos)
+This project is already shaped for Vercel deployment.
 
-1. Push your code to GitHub
-2. Connect repository to Vercel
-3. Configure environment variables
-4. Deploy
+Checklist:
 
-### Self-Hosting
+1. Push the repo to GitHub.
+2. Connect the repo to Vercel.
+3. Add all required environment variables in Vercel.
+4. Confirm Supabase Site URL and redirect configuration.
+5. Deploy.
+6. Test signup, email verification, login, dashboard access, and the hidden admin route.
 
-The application can be self-hosted using:
-- **Docker**: Build and run in a container
-- **PM2**: Process manager for Node.js
-- **Systemd**: Linux service management
+## Hidden Admin Route
 
----
+Owner analytics live at:
 
-## Contributing
+```txt
+/dashboard/admin
+```
 
-We welcome contributions! Please follow these steps:
+This page is intended for:
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+- The founder
+- Agency owners
+- Platform admins
 
-### Development Guidelines
+It is not meant to be part of the public marketing flow.
 
-- Follow TypeScript best practices
-- Use existing UI components from shadcn/ui
-- Maintain emerald/green color scheme
-- Ensure responsive design for all new features
-- Add demo data for any new data models
-- Write meaningful commit messages
+## Data Model Summary
 
----
+Main Prisma models:
 
-## License
+- `User`
+- `Lead`
+- `AuditJob`
+- `OutreachCampaign`
+- `Proposal`
+- `Activity`
+- `Subscription`
+- NextAuth support models: `Account`, `Session`, `VerificationToken`
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+## Operational Notes For The Team
 
----
+### For product owners
 
-## Support
+- Use the public pages to explain value clearly.
+- Use pricing in free-beta mode until billing is ready.
+- Use `/dashboard/admin` to review adoption and internal product health.
 
-For support, please:
-- Open an issue on GitHub
-- Contact the maintainers
-- Check the documentation
+### For operators / employees
 
----
+- Start with leads.
+- Run audits when you need a stronger sales angle.
+- Generate outreach after qualification.
+- Generate proposals when a lead shows buying intent.
 
-## Roadmap
+### For developers
 
-- [ ] Multi-language support (i18n)
-- [ ] Advanced analytics with custom date ranges
-- [ ] Email integration (SendGrid, Mailgun)
-- [ ] Calendar integration (Google, Outlook)
-- [ ] Webhook support for external integrations
-- [ ] Mobile app (React Native)
-- [ ] AI-powered lead scoring
-- [ ] Automated follow-up sequences
-- [ ] Custom report builder
-- [ ] White-label customization
+- App data is scoped from the authenticated session.
+- Supabase Auth and Prisma user records are synchronized in the app flow.
+- Public checkout should remain disabled until billing keys are added.
+- Avoid reintroducing client-supplied `userId` access patterns for protected data.
 
----
+## Current Known Gaps
 
-**Built with ❤️ for growth-focused agencies and businesses**
+These are the main remaining limitations to address before a larger commercial rollout:
 
----
+- Team management is still memory-backed rather than fully relational.
+- Usage tracking is still memory-backed rather than persisted.
+- Billing is intentionally inactive until Razorpay keys are added.
+- Fresh dependency lock alignment may need `npm install` once in your final clean repo state.
 
-## Search Bar Guide (Now Workable)
+## Repo Cleanup Done
 
-The top search bar is now connected to a command search system.
+This repo has already been cleaned to remove:
 
-### How to use it
+- Duplicate dashboard fetch components that were no longer used
+- Extra markdown setup files
+- Duplicate audit route files
+- Template and helper folders that were not part of the product flow
 
-1. Click the search bar in top navigation, or press `Ctrl + K` / `Cmd + K`
-2. Type what you want
-3. Select an item from results and press Enter
+## Recommended Final Manual Test
 
-### What you can search
+Before calling it production-ready, test this full story on Vercel:
 
-You can search by module name, keyword, and quick action.
+1. Visit the landing page.
+2. Open pricing.
+3. Create an account.
+4. Confirm the email link.
+5. Sign in.
+6. Create a lead.
+7. Run an audit.
+8. Generate outreach.
+9. Generate a proposal.
+10. Visit `/dashboard/admin` with an owner account.
 
-- **Pages / modules**
-  - Dashboard (home, overview, analytics, KPI)
-  - Leads (CRM, pipeline, prospects, contacts)
-  - AI Audit (SEO, accessibility, performance, UX)
-  - Outreach (campaigns, cold email, LinkedIn, sequences)
-  - Proposals (quotes, pricing, client proposals)
-  - Billing (subscription, invoices, plan, usage)
-  - Admin (users, MRR, logs, system) - visible for admin/agency owner only
-  - Settings (profile, account, notifications, preferences)
-
-- **Quick actions**
-  - Mark all notifications as read
-  - Toggle dark/light theme
-  - Open profile settings
-  - Open billing
-
----
-
-## Business Handbook (Owner + Customer Perspective)
-
-This section explains how to sell, run, and deliver GrowthOS as a SaaS product.
-
-## 1) What GrowthOS sells
-
-GrowthOS sells an **AI-enabled revenue operations workspace** for agencies and service teams.
-
-Core value:
-- Capture and organize leads faster
-- Audit client websites with actionable insights
-- Generate outreach campaigns quickly
-- Create professional proposals and track progress
-- Manage usage, subscriptions, and performance in one platform
-
----
-
-## 2) Ideal customers
-
-- Digital marketing agencies
-- Web/design agencies
-- Lead generation teams
-- Freelance consultants scaling to small teams
-- B2B service businesses with outbound sales workflows
-
----
-
-## 3) Pricing/packaging strategy (recommended)
-
-Use tiered plans based on seats + AI usage + feature access.
-
-- **Free/Starter**
-  - Basic CRM + limited audits + limited outreach generations
-  - 1 seat, limited monthly AI credits
-- **Pro**
-  - Full workflow for growing agencies
-  - More seats, higher AI limits, proposal exports
-- **Enterprise**
-  - Advanced controls and highest limits
-  - Priority support, security controls, custom onboarding
-
-Upsell levers:
-- Additional AI credit packs
-- Extra user seats
-- White-label/report customization
-- Priority support SLA
-
----
-
-## 4) How to sell this SaaS
-
-### Positioning message
-
-"GrowthOS helps agencies turn leads into revenue with AI-powered audits, outreach, and proposals in one place."
-
-### Sales process
-
-1. Demo dashboard + lead pipeline + one audit run
-2. Show outreach generation and proposal flow end-to-end
-3. Estimate time saved per month
-4. Offer a trial with onboarding checklist
-5. Convert to paid plan with usage-based upsell
-
-### Channels to acquire users
-
-- Content marketing (SEO around agency ops + lead generation)
-- Founder-led outreach (email + LinkedIn)
-- Partner channels (marketing consultants, agency coaches)
-- Product-led onboarding with demo data + in-app prompts
-
----
-
-## 5) What the SaaS owner (you) can manage
-
-As platform owner/operator, you can manage:
-
-- Product modules and feature rollout
-- User lifecycle (trial, active, churn-risk)
-- Subscriptions and billing plans
-- Usage limits (AI credits, audits, proposals)
-- Platform analytics (MRR, active users, usage patterns)
-- Admin governance and system settings
-- Notifications and activity logs for operational monitoring
-
-### Weekly owner checklist
-
-- Review MRR and active user trends
-- Check audit/outreach/proposal usage by plan
-- Identify churn risks (low engagement users)
-- Push feature improvements and onboarding updates
-- Review support tickets and friction points
-
----
-
-## 6) What your customer gets after purchase
-
-When a paying customer signs up, they get:
-
-- Their own account and workspace context
-- Access to product modules based on plan
-- A top-level app navigation with all enabled modules
-- Billing controls and usage visibility
-- Settings for profile/team/preferences
-- Demo-safe fallback behaviors when external AI is unavailable
-
-### If customer is an owner/admin inside their account
-
-They get access to:
-- Admin panel (user analytics, usage, operational metrics)
-- Team-level management capabilities
-- Subscription and billing management
-- System-level account settings (within their tenant/workspace context)
-
----
-
-## 7) Customer-facing feature list
-
-### Dashboard
-- KPI overview, revenue trend charts, team/activity visibility
-
-### Leads CRM
-- Pipeline stages, lead records, filters, status movement
-
-### AI Audit
-- URL-based audit generation with SEO/UX/performance/accessibility scoring
-- Findings + suggestions output
-
-### Outreach
-- Campaign generation and sequence management
-
-### Proposals
-- Proposal drafting, pricing structure, status tracking
-
-### Billing
-- Plan/usage visibility and subscription context
-
-### Settings
-- Profile/preferences and account controls
-
-### Admin (role-based)
-- Platform/team analytics and administrative actions
-
----
-
-## 8) Operational model when selling to many users
-
-Recommended model:
-- Keep role-based access control enabled (`admin`, `agency_owner`, `team_member`)
-- Enforce plan limits at API level for consistency
-- Track all key actions in activity logs
-- Use onboarding templates for faster activation
-- Monitor leading indicators: time-to-first-audit, campaigns created, proposals sent
-
----
-
-## 9) Implementation status in this repo
-
-Current project already includes:
-- Next.js app shell with module routing
-- API routes for leads, audits, outreach, proposals, stats, activities
-- Prisma-backed persistence
-- Role-aware navigation and admin visibility
-- Search command bar for module navigation and quick actions
-
-This makes GrowthOS ready for:
-- Internal operations
-- Pilot customers
-- Staged commercial rollout with plan-based monetization
+If all of that works on the deployed domain, the product flow is in strong shape.

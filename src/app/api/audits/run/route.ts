@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { db } from '@/lib/db'
+import { generateAuditWithAI } from '@/lib/ai-service'
+import { requireTenantContext } from '@/lib/tenant'
 
 type AuditFinding = {
   category: 'SEO' | 'Performance' | 'UX' | 'Accessibility'
@@ -30,15 +32,66 @@ function sanitizeResult(input: Partial<AuditResult>): AuditResult {
   }
 }
 
+function normalizeAuditPayload(input: Awaited<ReturnType<typeof generateAuditWithAI>>): Partial<AuditResult> {
+  return {
+    overallScore: input.overallScore,
+    seoScore: input.seoScore,
+    uxScore: input.uxScore,
+    performance:
+      'performance' in input && typeof input.performance === 'number'
+        ? input.performance
+        : 'performanceScore' in input && typeof input.performanceScore === 'number'
+          ? input.performanceScore
+          : 0,
+    accessibility:
+      'accessibility' in input && typeof input.accessibility === 'number'
+        ? input.accessibility
+        : 'accessibilityScore' in input && typeof input.accessibilityScore === 'number'
+          ? input.accessibilityScore
+          : 0,
+    findings: Array.isArray(input.findings)
+      ? input.findings.map((finding) => ({
+          category: finding.category as AuditFinding['category'],
+          severity: finding.severity as AuditFinding['severity'],
+          title:
+            'title' in finding && typeof finding.title === 'string'
+              ? finding.title
+              : 'issue' in finding && typeof finding.issue === 'string'
+                ? finding.issue
+                : 'Audit finding',
+          description:
+            'description' in finding && typeof finding.description === 'string'
+              ? finding.description
+              : 'issue' in finding && typeof finding.issue === 'string'
+                ? finding.issue
+                : 'Needs review.',
+        }))
+      : [],
+    suggestions: Array.isArray(input.suggestions)
+      ? input.suggestions.map((suggestion) =>
+          typeof suggestion === 'string'
+            ? suggestion
+            : [suggestion.title, suggestion.description].filter(Boolean).join(': ')
+        )
+      : [],
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
-    const { auditId, url } = (await request.json()) as { auditId?: string; url?: string }
+    const tenant = await requireTenantContext()
+    const { auditId, url, responseStyle, responseLength } = (await request.json()) as {
+      auditId?: string
+      url?: string
+      responseStyle?: 'formal' | 'advanced' | 'professional'
+      responseLength?: 'short' | 'medium' | 'long'
+    }
 
     if (!auditId || !url) {
       return NextResponse.json({ error: 'auditId and url are required' }, { status: 400 })
     }
 
-    const audit = await db.auditJob.findUnique({ where: { id: auditId } })
+    const audit = await db.auditJob.findFirst({ where: { id: auditId, userId: tenant.userId } })
     if (!audit) {
       return NextResponse.json({ error: 'Audit not found' }, { status: 404 })
     }
@@ -48,43 +101,8 @@ export async function POST(request: NextRequest) {
       data: { status: 'running', progress: 20 },
     })
 
-    const ZAI = (await import('z-ai-web-dev-sdk')).default
-    const sdk = await ZAI.create()
-
-    const prompt = `You are a website audit expert. Analyze website "${url}".
-Return ONLY valid JSON:
-{
-  "overallScore": <0-100>,
-  "seoScore": <0-100>,
-  "uxScore": <0-100>,
-  "performance": <0-100>,
-  "accessibility": <0-100>,
-  "findings": [
-    {"category":"SEO|Performance|UX|Accessibility","severity":"high|medium|low","title":"...","description":"..."}
-  ],
-  "suggestions": ["...", "..."]
-}`
-
-    const result = await sdk.chat.completions.create({
-      messages: [
-        { role: 'system', content: 'Return only valid JSON.' },
-        { role: 'user', content: prompt },
-      ],
-      model: 'default',
-    })
-
-    let responseText = ''
-    if (result?.choices?.[0]?.message?.content) {
-      responseText = result.choices[0].message.content
-    } else if (typeof result === 'string') {
-      responseText = result
-    } else if ((result as { content?: string })?.content) {
-      responseText = (result as { content?: string }).content || ''
-    }
-
-    responseText = responseText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
-    const parsed = JSON.parse(responseText) as Partial<AuditResult>
-    const auditResults = sanitizeResult(parsed)
+    const generatedAudit = await generateAuditWithAI(url, { style: responseStyle, length: responseLength })
+    const auditResults = sanitizeResult(normalizeAuditPayload(generatedAudit))
 
     const updatedAudit = await db.auditJob.update({
       where: { id: auditId },
@@ -124,6 +142,10 @@ Return ONLY valid JSON:
           },
         })
         .catch(() => null)
+    }
+
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     return NextResponse.json(

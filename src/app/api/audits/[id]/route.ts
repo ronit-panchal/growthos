@@ -1,16 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { requireTenantContext } from '@/lib/tenant';
 
 // GET /api/audits/[id] - Get audit by ID
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const tenant = await requireTenantContext();
     const { id } = await params;
 
-    const audit = await db.auditJob.findUnique({
-      where: { id },
+    const audit = await db.auditJob.findFirst({
+      where: { id, userId: tenant.userId },
     });
 
     if (!audit) {
@@ -23,6 +25,9 @@ export async function GET(
     return NextResponse.json({ audit });
   } catch (error) {
     console.error('Error fetching audit:', error);
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     return NextResponse.json(
       { error: 'Failed to fetch audit' },
       { status: 500 }
@@ -36,6 +41,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const tenant = await requireTenantContext();
     const { id } = await params;
     const body = await request.json();
     const {
@@ -53,7 +59,7 @@ export async function PUT(
     } = body;
 
     // Check if audit exists
-    const existingAudit = await db.auditJob.findUnique({ where: { id } });
+    const existingAudit = await db.auditJob.findFirst({ where: { id, userId: tenant.userId } });
     if (!existingAudit) {
       return NextResponse.json(
         { error: 'Audit not found' },
@@ -94,6 +100,9 @@ export async function PUT(
     return NextResponse.json({ audit });
   } catch (error) {
     console.error('Error updating audit:', error);
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     return NextResponse.json(
       { error: 'Failed to update audit' },
       { status: 500 }

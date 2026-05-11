@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { syncAppUser } from '@/lib/app-user'
+import { supabaseServiceHeaders } from '@/lib/supabase-auth-http'
 
 export async function POST(request: NextRequest) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
@@ -21,11 +23,11 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Email and password are required.' }, { status: 400 })
   }
 
-  const response = await fetch(`${supabaseUrl}/auth/v1/signup`, {
+  const baseUrl = supabaseUrl.replace(/\/$/, '')
+  const response = await fetch(`${baseUrl}/auth/v1/signup`, {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/json',
-      apikey: supabaseAnonKey,
+      ...supabaseServiceHeaders(supabaseAnonKey),
     },
     body: JSON.stringify({
       email: body.email.trim().toLowerCase(),
@@ -55,5 +57,28 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: String(message).trim() || 'Failed to create account.' }, { status: response.status })
   }
 
-  return NextResponse.json({ ok: true })
+  const createdUser =
+    (payload as { user?: { id?: string; email?: string; user_metadata?: { name?: string } } }).user ??
+    (payload as {
+      session?: { user?: { id?: string; email?: string; user_metadata?: { name?: string } } }
+    }).session?.user
+
+  if (createdUser?.id) {
+    await syncAppUser({
+      id: createdUser.id,
+      email: createdUser.email?.trim().toLowerCase() || body.email.trim().toLowerCase(),
+      name: createdUser.user_metadata?.name || body.name?.trim() || '',
+    }).catch((error) => {
+      console.error('Failed to sync app user after registration:', error)
+    })
+  }
+
+  const hasSession =
+    typeof payload.access_token === 'string' ||
+    typeof (payload as { session?: { access_token?: string } }).session?.access_token === 'string'
+
+  return NextResponse.json({
+    ok: true,
+    needsEmailConfirmation: !hasSession,
+  })
 }

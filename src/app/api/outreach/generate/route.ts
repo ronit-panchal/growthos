@@ -1,72 +1,43 @@
 import { NextRequest, NextResponse } from 'next/server'
-
-type OutreachResponse = {
-  subject: string
-  content: string
-  cta: string
-  sequence: Array<{ step: number; type: string; delay: string; subject: string }>
-}
+import { generateOutreachWithAI } from '@/lib/ai-service'
+import { requireTenantContext } from '@/lib/tenant'
 
 export async function POST(request: NextRequest) {
   try {
+    await requireTenantContext()
     const body = (await request.json()) as {
-      type?: string
       tone?: string
       industry?: string
       targetAudience?: string
-      personalization?: string
+      responseStyle?: 'formal' | 'advanced' | 'professional'
+      responseLength?: 'short' | 'medium' | 'long'
     }
 
-    if (!body.type) {
-      return NextResponse.json({ error: 'type is required' }, { status: 400 })
-    }
+    const tone = body.tone || 'professional'
+    const industry = body.industry || 'general'
+    const audience = body.targetAudience || 'business decision makers'
 
-    const ZAI = (await import('z-ai-web-dev-sdk')).default
-    const sdk = await ZAI.create()
-
-    const prompt = `Generate ${body.type} outreach copy in a ${body.tone || 'professional'} tone for ${body.industry || 'general'} industry.
-Target audience: ${body.targetAudience || 'business decision makers'}.
-Personalization context: ${body.personalization || 'none'}.
-
-Return ONLY valid JSON:
-{
-  "subject":"...",
-  "content":"...",
-  "cta":"...",
-  "sequence":[{"step":1,"type":"email|linkedin","delay":"0 days","subject":"..."}]
-}`
-
-    const result = await sdk.chat.completions.create({
-      messages: [
-        { role: 'system', content: 'You are an expert outreach copywriter. Return JSON only.' },
-        { role: 'user', content: prompt },
-      ],
-      model: 'default',
+    // Generate outreach content with AI
+    const generated = await generateOutreachWithAI(tone, industry, audience, {
+      style: body.responseStyle,
+      length: body.responseLength,
     })
 
-    let responseText = ''
-    if (result?.choices?.[0]?.message?.content) {
-      responseText = result.choices[0].message.content
-    } else if (typeof result === 'string') {
-      responseText = result
-    } else if ((result as { content?: string })?.content) {
-      responseText = (result as { content?: string }).content || ''
+    return NextResponse.json({
+      ok: true,
+      content: generated,
+      message: 'Outreach content generated successfully',
+    })
+  } catch (error) {
+    console.error('Error generating outreach:', error)
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
-
-    responseText = responseText.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
-    const parsed = JSON.parse(responseText) as Partial<OutreachResponse>
-
-    const generated: OutreachResponse = {
-      subject: parsed.subject || '',
-      content: parsed.content || '',
-      cta: parsed.cta || '',
-      sequence: Array.isArray(parsed.sequence) ? parsed.sequence : [],
-    }
-
-    return NextResponse.json({ generated })
-  } catch {
     return NextResponse.json(
-      { error: 'Failed to generate outreach content. Ensure AI provider is configured.' },
+      {
+        error: 'Failed to generate outreach content',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      },
       { status: 500 }
     )
   }

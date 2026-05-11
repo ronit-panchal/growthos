@@ -4,6 +4,7 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Providers } from "@/components/providers";
+import { Footer } from "@/components/footer";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -16,8 +17,11 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "GrowthOS - AI-Powered Growth Platform",
-  description: "AI-powered SaaS platform for agencies and businesses to accelerate growth with intelligent lead capture, audits, outreach, and proposals.",
+  title: {
+    default: "GrowthOS | Agency Revenue Operating System",
+    template: "%s | GrowthOS",
+  },
+  description: "GrowthOS is a revenue operating system for agencies that combines lead capture, website audits, outreach generation, proposals, and owner analytics in one SaaS workspace.",
   keywords: ["GrowthOS", "AI", "SaaS", "growth platform", "lead generation", "audit", "outreach"],
   authors: [{ name: "GrowthOS Team" }],
   icons: {
@@ -36,10 +40,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
-      >
+    <html
+      lang="en"
+      suppressHydrationWarning
+      className={`${geistSans.variable} ${geistMono.variable}`}
+    >
+      <body className="antialiased bg-background text-foreground min-h-screen flex flex-col">
         <Providers>
           <ThemeProvider
             attribute="class"
@@ -47,7 +53,10 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
-            {children}
+            <div className="flex-1">
+              {children}
+            </div>
+            <Footer />
             <Toaster />
           </ThemeProvider>
         </Providers>

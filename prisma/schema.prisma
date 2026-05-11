@@ -40,11 +40,13 @@ model User {
   name          String?
   avatar        String?
   role          String    @default("agency_owner") // agency_owner, team_member, admin
+  status        String    @default("active") // active, disabled
   company       String?
   plan          String    @default("free") // free, starter, pro, enterprise
   trialEndsAt   DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
+  managedById   String?
 
   accounts      Account[]
   sessions      Session[]
@@ -53,6 +55,12 @@ model User {
   outreach      OutreachCampaign[]
   proposals     Proposal[]
   activities    Activity[]
+  authEvents    AuthEvent[]
+  managedBy     User?     @relation("ManagedUsers", fields: [managedById], references: [id])
+  managedUsers  User[]    @relation("ManagedUsers")
+
+  @@index([managedById])
+  @@index([role])
 }
 
 model VerificationToken {
@@ -85,6 +93,8 @@ model Lead {
   userId        String
   user          User      @relation(fields: [userId], references: [id])
   activities    Activity[]
+
+  @@index([userId, createdAt])
 }
 
 model AuditJob {
@@ -106,6 +116,8 @@ model AuditJob {
 
   userId        String
   user          User      @relation(fields: [userId], references: [id])
+
+  @@index([userId, createdAt])
 }
 
 model OutreachCampaign {
@@ -125,6 +137,8 @@ model OutreachCampaign {
 
   userId        String
   user          User      @relation(fields: [userId], references: [id])
+
+  @@index([userId, createdAt])
 }
 
 model Proposal {
@@ -146,6 +160,8 @@ model Proposal {
 
   userId        String
   user          User      @relation(fields: [userId], references: [id])
+
+  @@index([userId, createdAt])
 }
 
 model Activity {
@@ -160,6 +176,8 @@ model Activity {
   user          User      @relation(fields: [userId], references: [id])
   leadId        String?
   lead          Lead?     @relation(fields: [leadId], references: [id])
+
+  @@index([userId, createdAt])
 }
 
 model Subscription {
@@ -174,3 +192,21 @@ model Subscription {
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 }
+
+model AuthEvent {
+  id           String   @id @default(cuid())
+  eventType    String   // login, logout
+  actorRole    String?
+  actorEmail   String?
+  ipAddress    String?
+  userAgent    String?
+  metadata     String?  @db.Text
+  occurredAt   DateTime @default(now())
+
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, occurredAt])
+  @@index([eventType, occurredAt])
+}
+

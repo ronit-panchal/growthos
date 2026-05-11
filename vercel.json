@@ -1,0 +1,45 @@
+{
+  "build": {
+    "env": {
+      "NEXT_PUBLIC_APP_URL": "@next_public_app_url",
+      "NEXTAUTH_URL": "@nextauth_url",
+      "NEXTAUTH_SECRET": "@nextauth_secret",
+      "DATABASE_URL": "@database_url",
+      "NEXT_PUBLIC_SUPABASE_URL": "@next_public_supabase_url",
+      "NEXT_PUBLIC_SUPABASE_ANON_KEY": "@next_public_supabase_anon_key",
+      "SUPABASE_SERVICE_ROLE_KEY": "@supabase_service_role_key",
+      "RAZORPAY_KEY_ID": "@razorpay_key_id",
+      "RAZORPAY_KEY_SECRET": "@razorpay_key_secret",
+      "RAZORPAY_WEBHOOK_SECRET": "@razorpay_webhook_secret",
+      "SMTP_HOST": "@smtp_host",
+      "SMTP_PORT": "@smtp_port",
+      "SMTP_USER": "@smtp_user",
+      "SMTP_PASS": "@smtp_pass",
+      "SMTP_FROM": "@smtp_from"
+    }
+  },
+  "functions": {
+    "src/app/api/**/*.ts": {
+      "maxDuration": 30
+    }
+  },
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET, POST, PUT, DELETE, OPTIONS"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "Content-Type, Authorization"
+        }
+      ]
+    }
+  ]
+}

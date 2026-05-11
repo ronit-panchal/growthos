@@ -1,50 +1,9 @@
 import type { NextAuthOptions } from 'next-auth'
 import CredentialsProvider from 'next-auth/providers/credentials'
-
-type SupabaseTokenResponse = {
-  access_token: string
-  refresh_token: string
-  expires_in: number
-  token_type: string
-  user: {
-    id: string
-    email?: string
-    user_metadata?: {
-      name?: string
-      full_name?: string
-    }
-    app_metadata?: {
-      organization_id?: string
-      role?: string
-      plan?: string
-    }
-  }
-}
-
-async function signInWithSupabase(email: string, password: string): Promise<SupabaseTokenResponse | null> {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-  if (!supabaseUrl || !supabaseAnonKey) {
-    return null
-  }
-
-  const response = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=password`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      apikey: supabaseAnonKey,
-    },
-    body: JSON.stringify({ email, password }),
-    cache: 'no-store',
-  })
-
-  if (!response.ok) {
-    return null
-  }
-
-  return (await response.json()) as SupabaseTokenResponse
-}
+import { syncAppUser } from '@/lib/app-user'
+import { decodeSupabaseAccessToken, fetchSupabaseUser } from '@/lib/supabase-auth-http'
+import { db } from '@/lib/db'
+import { normalizeRole } from '@/lib/roles'
 
 export const authOptions: NextAuthOptions = {
   session: {
@@ -55,35 +14,76 @@ export const authOptions: NextAuthOptions = {
   },
   providers: [
     CredentialsProvider({
-      name: 'Email and password',
+      id: 'supabase-access-token',
+      name: 'Supabase session',
       credentials: {
-        email: { label: 'Email', type: 'email' },
-        password: { label: 'Password', type: 'password' },
+        /** Short-lived JWT from supabase-js signInWithPassword (client) */
+        accessToken: { label: 'Access token', type: 'text' },
       },
       async authorize(credentials) {
-        const email = credentials?.email?.trim().toLowerCase()
-        const password = credentials?.password
+        const accessToken =
+          typeof credentials?.accessToken === 'string' ? credentials.accessToken.trim() : ''
 
-        if (!email || !password) {
+        if (!accessToken) {
           return null
         }
 
-        const tokenPayload = await signInWithSupabase(email, password)
-        if (!tokenPayload?.user?.id) {
+        if (!process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY?.trim()) {
+          return null
+        }
+
+        const profile = await fetchSupabaseUser(accessToken)
+        const claims = decodeSupabaseAccessToken(accessToken)
+
+        const userId = profile?.id || claims?.sub || ''
+        const email =
+          profile?.email?.trim().toLowerCase() ||
+          claims?.email?.trim().toLowerCase() ||
+          ''
+
+        if (!userId || !email) {
           return null
         }
 
         const organizationId =
-          tokenPayload.user.app_metadata?.organization_id?.trim() ||
-          tokenPayload.user.id
+          profile?.app_metadata?.organization_id?.trim() ||
+          claims?.app_metadata?.organization_id?.trim() ||
+          userId
+        const name =
+          profile?.user_metadata?.name ??
+          profile?.user_metadata?.full_name ??
+          claims?.user_metadata?.name ??
+          claims?.user_metadata?.full_name ??
+          ''
+        const role = normalizeRole(
+          profile?.app_metadata?.role ?? claims?.app_metadata?.role ?? 'agency_owner'
+        )
+        const plan = profile?.app_metadata?.plan ?? claims?.app_metadata?.plan ?? 'free'
+
+        try {
+          await syncAppUser({
+            id: userId,
+            email,
+            name,
+            role,
+            plan,
+          })
+        } catch (error) {
+          console.error('Failed to sync app user during sign-in:', error)
+        }
+
+        const appUser = await db.user.findUnique({ where: { id: userId } }).catch(() => null)
+        if (appUser?.status === 'disabled') {
+          return null
+        }
 
         return {
-          id: tokenPayload.user.id,
-          email: tokenPayload.user.email ?? email,
-          name: tokenPayload.user.user_metadata?.name ?? tokenPayload.user.user_metadata?.full_name ?? '',
+          id: userId,
+          email,
+          name,
           organizationId,
-          role: tokenPayload.user.app_metadata?.role ?? 'member',
-          plan: tokenPayload.user.app_metadata?.plan ?? 'free',
+          role,
+          plan,
         }
       },
     }),
@@ -93,7 +93,7 @@ export const authOptions: NextAuthOptions = {
       if (user) {
         const u = user as { id?: string; organizationId?: string; role?: string; plan?: string }
         token.organizationId = u.organizationId?.trim() || u.id || token.sub || ''
-        token.role = u.role ?? 'member'
+        token.role = normalizeRole(u.role ?? 'member')
         token.plan = u.plan ?? 'free'
       }
 
@@ -106,6 +106,10 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.sub ?? ''
+        session.user.email =
+          session.user.email || (typeof token.email === 'string' ? token.email : '')
+        session.user.name =
+          session.user.name || (typeof token.name === 'string' ? token.name : '')
         session.user.organizationId =
           (typeof token.organizationId === 'string' && token.organizationId) || token.sub || ''
         session.user.role = typeof token.role === 'string' ? token.role : 'member'

@@ -36,6 +36,7 @@ export async function POST(request: NextRequest) {
       currency: 'INR',
       notes: {
         plan,
+        email: tenant.email,
         organizationId: tenant.organizationId,
         userId: tenant.userId,
       },

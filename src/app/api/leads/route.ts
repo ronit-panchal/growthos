@@ -1,26 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import { requireTenantContext } from '@/lib/tenant';
 
 // GET /api/leads - List leads for a user
 export async function GET(request: NextRequest) {
   try {
+    const tenant = await requireTenantContext();
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId');
     const search = searchParams.get('search') || '';
     const source = searchParams.get('source') || '';
     const status = searchParams.get('status') || '';
     const sort = searchParams.get('sort') || 'createdAt';
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '20');
-
-    if (!userId) {
-      return NextResponse.json(
-        { error: 'userId is required' },
-        { status: 400 }
-      );
-    }
-
-    const where: Record<string, unknown> = { userId };
+    const where: Record<string, unknown> = { userId: tenant.userId };
 
     if (search) {
       where.OR = [
@@ -68,6 +61,9 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('Error fetching leads:', error);
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     return NextResponse.json(
       { error: 'Failed to fetch leads' },
       { status: 500 }
@@ -78,12 +74,13 @@ export async function GET(request: NextRequest) {
 // POST /api/leads - Create a new lead
 export async function POST(request: NextRequest) {
   try {
+    const tenant = await requireTenantContext();
     const body = await request.json();
-    const { name, email, phone, company, title, source, value, userId } = body;
+    const { name, email, phone, company, title, source, value } = body;
 
-    if (!name || !email || !userId) {
+    if (!name || !email) {
       return NextResponse.json(
-        { error: 'name, email, and userId are required' },
+        { error: 'name and email are required' },
         { status: 400 }
       );
     }
@@ -97,7 +94,7 @@ export async function POST(request: NextRequest) {
         title: title || null,
         source: source || 'manual',
         value: value ? parseFloat(String(value)) : 0,
-        userId,
+        userId: tenant.userId,
       },
     });
 
@@ -107,7 +104,7 @@ export async function POST(request: NextRequest) {
         type: 'lead_created',
         title: 'New lead captured',
         description: `${name} from ${company || 'Unknown'} was added as a lead`,
-        userId,
+        userId: tenant.userId,
         leadId: lead.id,
       },
     });
@@ -115,6 +112,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ lead }, { status: 201 });
   } catch (error) {
     console.error('Error creating lead:', error);
+    if (error instanceof Error && error.message === 'Unauthorized') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     return NextResponse.json(
       { error: 'Failed to create lead' },
       { status: 500 }
